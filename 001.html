@@ -8,6 +8,8 @@
     <style>
         body { margin: 0; background: black; overflow: hidden; }
         canvas { display: block; }
+
+        /* タッチボタンの配置 */
         #controls {
             position: absolute;
             bottom: 20px;
@@ -19,7 +21,7 @@
         .btn {
             width: 60px;
             height: 60px;
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -60,14 +62,14 @@
         }
 
         function create() {
-            // 背景の設定
+            // 背景
             this.add.image(config.width / 2, config.height / 2, "background").setDisplaySize(config.width, config.height);
 
-            // プレイヤーの作成
+            // プレイヤー作成
             player = this.physics.add.sprite(config.width / 2, config.height / 2, "player");
             player.setCollideWorldBounds(true);
 
-            // アニメーション設定
+            // プレイヤーのアニメーション
             this.anims.create({
                 key: "walk",
                 frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
@@ -83,7 +85,7 @@
         }
 
         function update() {
-            // 速度リセット
+            // プレイヤーの動きをリセット
             player.setVelocity(0);
 
             // キーボード & タッチ入力
@@ -103,6 +105,7 @@
                 player.anims.play("walk", true);
             }
 
+            // どのキーも押されていない場合はアニメーションを停止
             if (!cursors.left.isDown && !cursors.right.isDown && !cursors.up.isDown && !cursors.down.isDown &&
                 !move.left && !move.right && !move.up && !move.down) {
                 player.anims.stop();

@@ -19,7 +19,7 @@
         .btn {
             width: 60px;
             height: 60px;
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.7);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -46,12 +46,12 @@
             type: Phaser.AUTO,
             width: window.innerWidth,
             height: window.innerHeight,
-            physics: { default: "arcade", arcade: { debug: false } },
+            physics: { default: "arcade", arcade: { gravity: { y: 0 }, debug: false } },
             scene: { preload, create, update }
         };
 
         const game = new Phaser.Game(config);
-        let player;
+        let player, cursors;
         let move = { left: false, right: false, up: false, down: false };
 
         function preload() {
@@ -60,11 +60,14 @@
         }
 
         function create() {
+            // 背景の設定
             this.add.image(config.width / 2, config.height / 2, "background").setDisplaySize(config.width, config.height);
 
+            // プレイヤーの作成
             player = this.physics.add.sprite(config.width / 2, config.height / 2, "player");
             player.setCollideWorldBounds(true);
 
+            // アニメーション設定
             this.anims.create({
                 key: "walk",
                 frames: this.anims.generateFrameNumbers("player", { start: 0, end: 3 }),
@@ -72,6 +75,41 @@
                 repeat: -1
             });
 
+            // キーボード入力
+            cursors = this.input.keyboard.createCursorKeys();
+
+            // タッチ操作の設定
+            setTouchControls();
+        }
+
+        function update() {
+            // 速度リセット
+            player.setVelocity(0);
+
+            // キーボード & タッチ入力
+            if (cursors.left.isDown || move.left) {
+                player.setVelocityX(-150);
+                player.anims.play("walk", true);
+            } else if (cursors.right.isDown || move.right) {
+                player.setVelocityX(150);
+                player.anims.play("walk", true);
+            }
+
+            if (cursors.up.isDown || move.up) {
+                player.setVelocityY(-150);
+                player.anims.play("walk", true);
+            } else if (cursors.down.isDown || move.down) {
+                player.setVelocityY(150);
+                player.anims.play("walk", true);
+            }
+
+            if (!cursors.left.isDown && !cursors.right.isDown && !cursors.up.isDown && !cursors.down.isDown &&
+                !move.left && !move.right && !move.up && !move.down) {
+                player.anims.stop();
+            }
+        }
+
+        function setTouchControls() {
             document.getElementById("left").addEventListener("touchstart", () => move.left = true);
             document.getElementById("left").addEventListener("touchend", () => move.left = false);
             document.getElementById("right").addEventListener("touchstart", () => move.right = true);
@@ -80,30 +118,6 @@
             document.getElementById("up").addEventListener("touchend", () => move.up = false);
             document.getElementById("down").addEventListener("touchstart", () => move.down = true);
             document.getElementById("down").addEventListener("touchend", () => move.down = false);
-        }
-
-        function update() {
-            player.setVelocity(0);
-
-            if (move.left) {
-                player.setVelocityX(-150);
-                player.anims.play("walk", true);
-            } else if (move.right) {
-                player.setVelocityX(150);
-                player.anims.play("walk", true);
-            }
-
-            if (move.up) {
-                player.setVelocityY(-150);
-                player.anims.play("walk", true);
-            } else if (move.down) {
-                player.setVelocityY(150);
-                player.anims.play("walk", true);
-            }
-
-            if (!move.left && !move.right && !move.up && !move.down) {
-                player.anims.stop();
-            }
         }
     </script>
 

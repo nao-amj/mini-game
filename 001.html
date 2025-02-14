@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>終焉の時計塔 - RPG</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+</head>
+<body>
+    <script>
+        // ゲーム設定
+        const config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 600,
+            physics: {
+                default: "arcade",
+                arcade: { debug: false }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        // ゲーム開始
+        const game = new Phaser.Game(config);
+        let player;
+        let cursors;
+
+        function preload() {
+            // 画像をロード
+            this.load.image("tiles", "https://labs.phaser.io/assets/tilemaps/tiles/dungeon-16-16.png");
+            this.load.tilemapTiledJSON("map", "https://labs.phaser.io/assets/tilemaps/maps/dungeon.json");
+            this.load.spritesheet("player", "https://labs.phaser.io/assets/sprites/characters.png", {
+                frameWidth: 16,
+                frameHeight: 16
+            });
+        }
+
+        function create() {
+            // マップの作成
+            const map = this.make.tilemap({ key: "map" });
+            const tileset = map.addTilesetImage("dungeon", "tiles");
+            const groundLayer = map.createLayer("Ground", tileset, 0, 0);
+            const wallsLayer = map.createLayer("Walls", tileset, 0, 0);
+            wallsLayer.setCollisionByExclusion([-1]); // 壁の設定
+
+            // プレイヤーの作成
+            player = this.physics.add.sprite(100, 100, "player", 1);
+            player.setCollideWorldBounds(true);
+
+            // 壁との衝突を設定
+            this.physics.add.collider(player, wallsLayer);
+
+            // カメラ設定
+            this.cameras.main.startFollow(player);
+
+            // キーボード入力
+            cursors = this.input.keyboard.createCursorKeys();
+        }
+
+        function update() {
+            // プレイヤー移動
+            player.setVelocity(0);
+
+            if (cursors.left.isDown) {
+                player.setVelocityX(-100);
+            } else if (cursors.right.isDown) {
+                player.setVelocityX(100);
+            }
+
+            if (cursors.up.isDown) {
+                player.setVelocityY(-100);
+            } else if (cursors.down.isDown) {
+                player.setVelocityY(100);
+            }
+        }
+    </script>
+</body>
+</html>

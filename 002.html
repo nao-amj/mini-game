@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>スマホ対応ダンジョン</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #222;
+            color: white;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        canvas {
+            border: 2px solid white;
+            background-color: black;
+            image-rendering: pixelated;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .btn {
+            width: 50px;
+            height: 50px;
+            margin: 5px;
+            font-size: 20px;
+            text-align: center;
+            line-height: 50px;
+            border: 2px solid white;
+            background-color: gray;
+            color: white;
+            border-radius: 10px;
+            user-select: none;
+        }
+
+        .btn:active {
+            background-color: darkgray;
+        }
+
+        .btn-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .row {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="controls">
+        <div class="btn-container">
+            <div class="btn" id="btnUp">▲</div>
+        </div>
+        <div class="row">
+            <div class="btn" id="btnLeft">◀</div>
+            <div class="btn" style="visibility: hidden;"></div>
+            <div class="btn" id="btnRight">▶</div>
+        </div>
+        <div class="btn-container">
+            <div class="btn" id="btnDown">▼</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const TILE_SIZE = 32;
+        const player = { x: 1, y: 1 };
+
+        const map = [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 1, 0, 0, 2, 0, 1],
+            [1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 1, 0, 0, 0, 1, 0, 0, 1],
+            [1, 0, 1, 1, 1, 0, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ];
+
+        function resizeCanvas() {
+            const scale = Math.min(window.innerWidth / (map[0].length * TILE_SIZE), window.innerHeight / (map.length * TILE_SIZE));
+            canvas.width = map[0].length * TILE_SIZE * scale;
+            canvas.height = map.length * TILE_SIZE * scale;
+            draw();
+        }
+
+        function drawMap() {
+            const scale = canvas.width / (map[0].length * TILE_SIZE);
+            for (let y = 0; y < map.length; y++) {
+                for (let x = 0; x < map[y].length; x++) {
+                    ctx.fillStyle = map[y][x] === 1 ? "black" : map[y][x] === 2 ? "gold" : "white";
+                    ctx.fillRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
+                    ctx.strokeStyle = "gray";
+                    ctx.strokeRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
+                }
+            }
+        }
+
+        function drawPlayer() {
+            const scale = canvas.width / (map[0].length * TILE_SIZE);
+            ctx.fillStyle = "red";
+            ctx.fillRect(player.x * TILE_SIZE * scale, player.y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
+        }
+
+        function checkTreasure() {
+            if (map[player.y][player.x] === 2) {
+                alert("宝箱を発見！ポーションを手に入れた！");
+                map[player.y][player.x] = 0;
+            }
+        }
+
+        function movePlayer(dx, dy) {
+            let newX = player.x + dx;
+            let newY = player.y + dy;
+
+            if (map[newY][newX] === 0 || map[newY][newX] === 2) {
+                player.x = newX;
+                player.y = newY;
+            }
+
+            checkTreasure();
+            draw();
+        }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowUp") movePlayer(0, -1);
+            if (event.key === "ArrowDown") movePlayer(0, 1);
+            if (event.key === "ArrowLeft") movePlayer(-1, 0);
+            if (event.key === "ArrowRight") movePlayer(1, 0);
+        });
+
+        document.getElementById("btnUp").addEventListener("click", () => movePlayer(0, -1));
+        document.getElementById("btnDown").addEventListener("click", () => movePlayer(0, 1));
+        document.getElementById("btnLeft").addEventListener("click", () => movePlayer(-1, 0));
+        document.getElementById("btnRight").addEventListener("click", () => movePlayer(1, 0));
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+    </script>
+
+</body>
+</html>

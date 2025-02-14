@@ -2,80 +2,168 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>終焉の時計塔 - RPG</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+    <style>
+        body { margin: 0; background: black; overflow: hidden; }
+        canvas { display: block; }
+        #dialogBox {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            border: 2px solid white;
+            text-align: center;
+            border-radius: 8px;
+        }
+        /* バーチャルパッド */
+        .virtual-pad {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+        .pad-button {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+        .action-button {
+            position: absolute;
+            bottom: 50px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 0, 0, 0.6);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 60px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+        }
+    </style>
 </head>
 <body>
+    <div id="dialogBox"></div>
+
+    <!-- バーチャルパッド（スマホ操作用） -->
+    <div class="virtual-pad">
+        <div class="pad-button" id="up">▲</div>
+        <div class="pad-button" id="left">◀</div>
+        <div class="pad-button" id="down">▼</div>
+        <div class="pad-button" id="right">▶</div>
+    </div>
+
+    <div class="action-button" id="action">A</div>
+
     <script>
-        // ゲーム設定
         const config = {
             type: Phaser.AUTO,
-            width: 800,
-            height: 600,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            parent: "game-container",
             physics: {
                 default: "arcade",
                 arcade: { debug: false }
             },
-            scene: {
-                preload: preload,
-                create: create,
-                update: update
-            }
+            scene: { preload, create, update }
         };
 
-        // ゲーム開始
         const game = new Phaser.Game(config);
-        let player;
-        let cursors;
+        let player, npc, cursors, enterKey;
+        let dialogBox = document.getElementById("dialogBox");
+        let isDialogOpen = false;
+        let npcMessage = "時の番人よ、終焉の鐘が迫っている…";
+        
+        let move = { up: false, down: false, left: false, right: false };
 
         function preload() {
-            // 画像をロード
             this.load.image("tiles", "https://labs.phaser.io/assets/tilemaps/tiles/dungeon-16-16.png");
             this.load.tilemapTiledJSON("map", "https://labs.phaser.io/assets/tilemaps/maps/dungeon.json");
-            this.load.spritesheet("player", "https://labs.phaser.io/assets/sprites/characters.png", {
-                frameWidth: 16,
-                frameHeight: 16
-            });
+            this.load.spritesheet("player", "https://labs.phaser.io/assets/sprites/characters.png", { frameWidth: 16, frameHeight: 16 });
+            this.load.spritesheet("npc", "https://labs.phaser.io/assets/sprites/characters.png", { frameWidth: 16, frameHeight: 16 });
         }
 
         function create() {
-            // マップの作成
             const map = this.make.tilemap({ key: "map" });
             const tileset = map.addTilesetImage("dungeon", "tiles");
             const groundLayer = map.createLayer("Ground", tileset, 0, 0);
             const wallsLayer = map.createLayer("Walls", tileset, 0, 0);
-            wallsLayer.setCollisionByExclusion([-1]); // 壁の設定
+            wallsLayer.setCollisionByExclusion([-1]);
 
-            // プレイヤーの作成
             player = this.physics.add.sprite(100, 100, "player", 1);
             player.setCollideWorldBounds(true);
 
-            // 壁との衝突を設定
-            this.physics.add.collider(player, wallsLayer);
+            npc = this.physics.add.sprite(200, 150, "npc", 5);
+            npc.setImmovable(true);
 
-            // カメラ設定
+            this.physics.add.collider(player, wallsLayer);
+            this.physics.add.collider(player, npc);
+
             this.cameras.main.startFollow(player);
 
-            // キーボード入力
             cursors = this.input.keyboard.createCursorKeys();
+            enterKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER);
+
+            this.physics.add.overlap(player, npc, () => {
+                if (Phaser.Input.Keyboard.JustDown(enterKey) && !isDialogOpen) {
+                    openDialog(npcMessage);
+                }
+            });
+
+            // バーチャルパッド操作
+            document.getElementById("up").addEventListener("touchstart", () => move.up = true);
+            document.getElementById("up").addEventListener("touchend", () => move.up = false);
+            document.getElementById("down").addEventListener("touchstart", () => move.down = true);
+            document.getElementById("down").addEventListener("touchend", () => move.down = false);
+            document.getElementById("left").addEventListener("touchstart", () => move.left = true);
+            document.getElementById("left").addEventListener("touchend", () => move.left = false);
+            document.getElementById("right").addEventListener("touchstart", () => move.right = true);
+            document.getElementById("right").addEventListener("touchend", () => move.right = false);
+            document.getElementById("action").addEventListener("touchstart", () => openDialog(npcMessage));
         }
 
         function update() {
-            // プレイヤー移動
+            if (isDialogOpen) return;
+
             player.setVelocity(0);
+            if (cursors.left.isDown || move.left) player.setVelocityX(-100);
+            if (cursors.right.isDown || move.right) player.setVelocityX(100);
+            if (cursors.up.isDown || move.up) player.setVelocityY(-100);
+            if (cursors.down.isDown || move.down) player.setVelocityY(100);
+        }
 
-            if (cursors.left.isDown) {
-                player.setVelocityX(-100);
-            } else if (cursors.right.isDown) {
-                player.setVelocityX(100);
-            }
-
-            if (cursors.up.isDown) {
-                player.setVelocityY(-100);
-            } else if (cursors.down.isDown) {
-                player.setVelocityY(100);
-            }
+        function openDialog(text) {
+            dialogBox.innerText = text;
+            dialogBox.style.display = "block";
+            isDialogOpen = true;
+            setTimeout(() => {
+                dialogBox.style.display = "none";
+                isDialogOpen = false;
+            }, 2000);
         }
     </script>
 </body>

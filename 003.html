@@ -26,13 +26,12 @@
         let highScore = localStorage.getItem("highScore") || 0;
         document.getElementById("highScore").innerText = "High Score: " + highScore;
 
-        let player = { x: canvas.width / 2, y: canvas.height - 80, width: 50, height: 50, shield: false };
+        let player = { x: canvas.width / 2, y: canvas.height - 80, width: 50, height: 50 };
         let bullets = [];
         let enemies = [];
         let boss = null;
-        let powerUps = [];
         let gameRunning = true;
-        let fireRate = 300; // 連射速度 (ms)
+        let fireRate = 300;
         let bossAppeared = false;
 
         // プレイヤー操作
@@ -62,11 +61,20 @@
             boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: 2, hp: 20 };
         }
 
+        function checkCollision(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.width > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.height > rect2.y
+            );
+        }
+
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // プレイヤー描画
-            ctx.fillStyle = player.shield ? "cyan" : "white";
+            ctx.fillStyle = "white";
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
             // 弾更新
@@ -85,21 +93,18 @@
 
                 if (enemy.y > canvas.height) gameOver();
 
+                let hit = false;
                 bullets = bullets.filter((bullet) => {
-                    if (
-                        bullet.x < enemy.x + enemy.width &&
-                        bullet.x + bullet.width > enemy.x &&
-                        bullet.y < enemy.y + enemy.height &&
-                        bullet.y + bullet.height > enemy.y
-                    ) {
+                    if (checkCollision(bullet, enemy)) {
+                        hit = true; // 敵に弾が当たったら削除
                         score += 10;
                         document.getElementById("score").innerText = "Score: " + score;
-                        return false; // 弾を削除
+                        return false;
                     }
                     return true;
                 });
 
-                return true; // 敵を削除
+                return !hit; // 当たった敵は削除
             });
 
             // ボス戦
@@ -116,12 +121,7 @@
                 if (boss.y > canvas.height) gameOver();
 
                 bullets = bullets.filter((bullet) => {
-                    if (
-                        bullet.x < boss.x + boss.width &&
-                        bullet.x + bullet.width > boss.x &&
-                        bullet.y < boss.y + boss.height &&
-                        bullet.y + bullet.height > boss.y
-                    ) {
+                    if (checkCollision(bullet, boss)) {
                         boss.hp--;
                         if (boss.hp <= 0) {
                             boss = null;

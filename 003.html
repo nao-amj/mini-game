@@ -26,7 +26,7 @@
         let highScore = localStorage.getItem("highScore") || 0;
         document.getElementById("highScore").innerText = "High Score: " + highScore;
 
-        let player = { x: canvas.width / 2, y: canvas.height - 80, width: 50, height: 50, speed: 5, shield: false };
+        let player = { x: canvas.width / 2, y: canvas.height - 80, width: 50, height: 50, shield: false };
         let bullets = [];
         let enemies = [];
         let boss = null;
@@ -58,15 +58,6 @@
             }
         }, 1000);
 
-        // パワーアップ出現
-        setInterval(() => {
-            if (gameRunning) {
-                let powerX = Math.random() * (canvas.width - 30);
-                let type = Math.random() > 0.5 ? "fire" : "shield";
-                powerUps.push({ x: powerX, y: 0, width: 30, height: 30, type: type });
-            }
-        }, 10000);
-
         function spawnBoss() {
             boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: 2, hp: 20 };
         }
@@ -79,58 +70,36 @@
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
             // 弾更新
-            bullets.forEach((bullet, index) => {
+            bullets = bullets.filter((bullet) => {
                 bullet.y -= 5;
                 ctx.fillStyle = "red";
                 ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-
-                if (bullet.y < 0) bullets.splice(index, 1);
+                return bullet.y > 0; // 画面外に出た弾を削除
             });
 
-            // 敵更新
-            enemies.forEach((enemy, index) => {
+            // 敵更新 & 当たり判定修正
+            enemies = enemies.filter((enemy) => {
                 enemy.y += enemy.speed;
                 ctx.fillStyle = "blue";
                 ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
 
                 if (enemy.y > canvas.height) gameOver();
 
-                bullets.forEach((bullet, bIndex) => {
+                bullets = bullets.filter((bullet) => {
                     if (
                         bullet.x < enemy.x + enemy.width &&
                         bullet.x + bullet.width > enemy.x &&
                         bullet.y < enemy.y + enemy.height &&
                         bullet.y + bullet.height > enemy.y
                     ) {
-                        enemies.splice(index, 1);
-                        bullets.splice(bIndex, 1);
                         score += 10;
                         document.getElementById("score").innerText = "Score: " + score;
+                        return false; // 弾を削除
                     }
+                    return true;
                 });
-            });
 
-            // パワーアップ更新
-            powerUps.forEach((power, index) => {
-                power.y += 2;
-                ctx.fillStyle = power.type === "fire" ? "orange" : "cyan";
-                ctx.fillRect(power.x, power.y, power.width, power.height);
-
-                if (
-                    power.x < player.x + player.width &&
-                    power.x + power.width > player.x &&
-                    power.y < player.y + player.height &&
-                    power.y + power.height > player.y
-                ) {
-                    if (power.type === "fire") {
-                        fireRate = 150;
-                        setTimeout(() => { fireRate = 300; }, 5000);
-                    } else {
-                        player.shield = true;
-                        setTimeout(() => { player.shield = false; }, 5000);
-                    }
-                    powerUps.splice(index, 1);
-                }
+                return true; // 敵を削除
             });
 
             // ボス戦
@@ -146,7 +115,7 @@
 
                 if (boss.y > canvas.height) gameOver();
 
-                bullets.forEach((bullet, bIndex) => {
+                bullets = bullets.filter((bullet) => {
                     if (
                         bullet.x < boss.x + boss.width &&
                         bullet.x + bullet.width > boss.x &&
@@ -154,13 +123,14 @@
                         bullet.y + bullet.height > boss.y
                     ) {
                         boss.hp--;
-                        bullets.splice(bIndex, 1);
                         if (boss.hp <= 0) {
                             boss = null;
                             score += 50;
                             document.getElementById("score").innerText = "Score: " + score;
                         }
+                        return false;
                     }
+                    return true;
                 });
             }
 

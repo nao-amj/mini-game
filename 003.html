@@ -32,7 +32,7 @@
         let boss = null;
         let gameRunning = true;
         let fireRate = 300;
-        let bossAppeared = false;
+        let nextBossScore = 100; // 最初のボス出現スコア
 
         // プレイヤー操作
         canvas.addEventListener("touchmove", (event) => {
@@ -58,7 +58,15 @@
         }, 1000);
 
         function spawnBoss() {
-            boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: 2, hp: 10 };
+            boss = { 
+                x: canvas.width / 2 - 75, 
+                y: 50, 
+                width: 150, 
+                height: 150, 
+                speed: 2, 
+                hp: 10 + Math.floor(score / 100) * 5 // ボスが登場するたびにHP増加
+            };
+            console.log(`Boss Spawned! HP: ${boss.hp}`);
         }
 
         function checkCollision(rect1, rect2) {
@@ -107,10 +115,10 @@
                 return !hit; // 当たった敵は削除
             });
 
-            // ボス戦
-            if (score >= 100 && !bossAppeared) {
-                bossAppeared = true;
+            // 一定スコアごとにボスを出現
+            if (score >= nextBossScore && !boss) {
                 spawnBoss();
+                nextBossScore += 200; // 次のボス出現スコアを更新
             }
 
             if (boss) {

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Shooter</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: black; }
+        canvas { display: block; }
+        #score { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; font-family: Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let score = 0;
+        let player = { x: canvas.width / 2, y: canvas.height - 80, width: 50, height: 50, speed: 5 };
+        let bullets = [];
+        let enemies = [];
+        let gameRunning = true;
+
+        // プレイヤー操作
+        canvas.addEventListener("touchmove", (event) => {
+            let touchX = event.touches[0].clientX;
+            let touchY = event.touches[0].clientY;
+            player.x = touchX - player.width / 2;
+            player.y = touchY - player.height / 2;
+        });
+
+        // 弾発射
+        setInterval(() => {
+            if (gameRunning) {
+                bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
+            }
+        }, 300);
+
+        // 敵出現
+        setInterval(() => {
+            if (gameRunning) {
+                let enemyX = Math.random() * (canvas.width - 50);
+                enemies.push({ x: enemyX, y: 0, width: 50, height: 50, speed: 2 });
+            }
+        }, 1000);
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // プレイヤー描画
+            ctx.fillStyle = "white";
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // 弾更新
+            bullets.forEach((bullet, index) => {
+                bullet.y -= 5;
+                ctx.fillStyle = "red";
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+
+                // 画面外処理
+                if (bullet.y < 0) bullets.splice(index, 1);
+            });
+
+            // 敵更新
+            enemies.forEach((enemy, index) => {
+                enemy.y += enemy.speed;
+                ctx.fillStyle = "blue";
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+                // 画面外処理
+                if (enemy.y > canvas.height) {
+                    gameRunning = false;
+                    alert("Game Over! Score: " + score);
+                    location.reload();
+                }
+
+                // 衝突判定
+                bullets.forEach((bullet, bIndex) => {
+                    if (
+                        bullet.x < enemy.x + enemy.width &&
+                        bullet.x + bullet.width > enemy.x &&
+                        bullet.y < enemy.y + enemy.height &&
+                        bullet.y + bullet.height > enemy.y
+                    ) {
+                        // 敵と弾を削除
+                        enemies.splice(index, 1);
+                        bullets.splice(bIndex, 1);
+                        score += 10;
+                        document.getElementById("score").innerText = "Score: " + score;
+                    }
+                });
+            });
+
+            if (gameRunning) requestAnimationFrame(update);
+        }
+
+        update();
+    </script>
+</body>
+</html>

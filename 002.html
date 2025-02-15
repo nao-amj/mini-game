@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>スマホ対応ダンジョン</title>
+    <title>スマホ対応ダンジョン（画像対応）</title>
     <style>
         body {
             display: flex;
@@ -95,6 +95,19 @@
             [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         ];
 
+        // 画像を読み込む
+        const images = {
+            wall: new Image(),
+            floor: new Image(),
+            chest: new Image(),
+            player: new Image()
+        };
+
+        images.wall.src = "IMG_3108.jpeg";
+        images.floor.src = "IMG_3109.jpeg";
+        images.chest.src = "IMG_3110.jpeg";
+        images.player.src = "IMG_3111.jpeg";
+
         function resizeCanvas() {
             const scale = Math.min(window.innerWidth / (map[0].length * TILE_SIZE), window.innerHeight / (map.length * TILE_SIZE));
             canvas.width = map[0].length * TILE_SIZE * scale;
@@ -106,18 +119,19 @@
             const scale = canvas.width / (map[0].length * TILE_SIZE);
             for (let y = 0; y < map.length; y++) {
                 for (let x = 0; x < map[y].length; x++) {
-                    ctx.fillStyle = map[y][x] === 1 ? "black" : map[y][x] === 2 ? "gold" : "white";
-                    ctx.fillRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
-                    ctx.strokeStyle = "gray";
-                    ctx.strokeRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
+                    let img;
+                    if (map[y][x] === 1) img = images.wall;
+                    else if (map[y][x] === 2) img = images.chest;
+                    else img = images.floor;
+
+                    ctx.drawImage(img, x * TILE_SIZE * scale, y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
                 }
             }
         }
 
         function drawPlayer() {
             const scale = canvas.width / (map[0].length * TILE_SIZE);
-            ctx.fillStyle = "red";
-            ctx.fillRect(player.x * TILE_SIZE * scale, player.y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
+            ctx.drawImage(images.player, player.x * TILE_SIZE * scale, player.y * TILE_SIZE * scale, TILE_SIZE * scale, TILE_SIZE * scale);
         }
 
         function checkTreasure() {
@@ -153,7 +167,8 @@
         document.getElementById("btnRight").addEventListener("click", () => movePlayer(1, 0));
 
         window.addEventListener("resize", resizeCanvas);
-        resizeCanvas();
+        images.player.onload = resizeCanvas;  // 画像が読み込まれたら描画
+
     </script>
 
 </body>

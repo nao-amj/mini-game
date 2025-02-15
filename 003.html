@@ -58,7 +58,7 @@
         }, 1000);
 
         function spawnBoss() {
-            boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: 2, hp: 20 };
+            boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: 2, hp: 10 };
         }
 
         function checkCollision(rect1, rect2) {
@@ -120,18 +120,27 @@
 
                 if (boss.y > canvas.height) gameOver();
 
+                let bossHit = false;
                 bullets = bullets.filter((bullet) => {
                     if (checkCollision(bullet, boss)) {
                         boss.hp--;
-                        if (boss.hp <= 0) {
-                            boss = null;
-                            score += 50;
-                            document.getElementById("score").innerText = "Score: " + score;
-                        }
-                        return false;
+                        bossHit = true;
+                        return false; // 弾を削除
                     }
                     return true;
                 });
+
+                if (bossHit) {
+                    console.log(`Boss HP: ${boss.hp}`);
+                }
+
+                // ボスHPがゼロ以下なら削除
+                if (boss.hp <= 0) {
+                    console.log("Boss Defeated!");
+                    boss = null;
+                    score += 50;
+                    document.getElementById("score").innerText = "Score: " + score;
+                }
             }
 
             if (gameRunning) requestAnimationFrame(update);

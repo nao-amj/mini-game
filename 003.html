@@ -8,10 +8,12 @@
         body { margin: 0; overflow: hidden; background: black; }
         canvas { display: block; }
         #score { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; font-family: Arial, sans-serif; }
+        #highScore { position: absolute; top: 40px; left: 10px; color: yellow; font-size: 20px; font-family: Arial, sans-serif; }
     </style>
 </head>
 <body>
     <div id="score">Score: 0</div>
+    <div id="highScore">High Score: 0</div>
     <canvas id="gameCanvas"></canvas>
     
     <script>
@@ -21,10 +23,17 @@
         canvas.height = window.innerHeight;
 
         let score = 0;
-        let player = { x: canvas.width / 2, y: canvas.height - 80, width: 50, height: 50, speed: 5 };
+        let highScore = localStorage.getItem("highScore") || 0;
+        document.getElementById("highScore").innerText = "High Score: " + highScore;
+
+        let player = { x: canvas.width / 2, y: canvas.height - 80, width: 50, height: 50, speed: 5, shield: false };
         let bullets = [];
         let enemies = [];
+        let boss = null;
+        let powerUps = [];
         let gameRunning = true;
+        let fireRate = 300; // 連射速度 (ms)
+        let bossAppeared = false;
 
         // プレイヤー操作
         canvas.addEventListener("touchmove", (event) => {
@@ -39,21 +48,34 @@
             if (gameRunning) {
                 bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20 });
             }
-        }, 300);
+        }, fireRate);
 
         // 敵出現
         setInterval(() => {
-            if (gameRunning) {
+            if (gameRunning && !boss) {
                 let enemyX = Math.random() * (canvas.width - 50);
                 enemies.push({ x: enemyX, y: 0, width: 50, height: 50, speed: 2 });
             }
         }, 1000);
 
+        // パワーアップ出現
+        setInterval(() => {
+            if (gameRunning) {
+                let powerX = Math.random() * (canvas.width - 30);
+                let type = Math.random() > 0.5 ? "fire" : "shield";
+                powerUps.push({ x: powerX, y: 0, width: 30, height: 30, type: type });
+            }
+        }, 10000);
+
+        function spawnBoss() {
+            boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: 2, hp: 20 };
+        }
+
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // プレイヤー描画
-            ctx.fillStyle = "white";
+            ctx.fillStyle = player.shield ? "cyan" : "white";
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
             // 弾更新
@@ -62,7 +84,6 @@
                 ctx.fillStyle = "red";
                 ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
 
-                // 画面外処理
                 if (bullet.y < 0) bullets.splice(index, 1);
             });
 
@@ -72,14 +93,8 @@
                 ctx.fillStyle = "blue";
                 ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
 
-                // 画面外処理
-                if (enemy.y > canvas.height) {
-                    gameRunning = false;
-                    alert("Game Over! Score: " + score);
-                    location.reload();
-                }
+                if (enemy.y > canvas.height) gameOver();
 
-                // 衝突判定
                 bullets.forEach((bullet, bIndex) => {
                     if (
                         bullet.x < enemy.x + enemy.width &&
@@ -87,7 +102,6 @@
                         bullet.y < enemy.y + enemy.height &&
                         bullet.y + bullet.height > enemy.y
                     ) {
-                        // 敵と弾を削除
                         enemies.splice(index, 1);
                         bullets.splice(bIndex, 1);
                         score += 10;
@@ -96,7 +110,70 @@
                 });
             });
 
+            // パワーアップ更新
+            powerUps.forEach((power, index) => {
+                power.y += 2;
+                ctx.fillStyle = power.type === "fire" ? "orange" : "cyan";
+                ctx.fillRect(power.x, power.y, power.width, power.height);
+
+                if (
+                    power.x < player.x + player.width &&
+                    power.x + power.width > player.x &&
+                    power.y < player.y + player.height &&
+                    power.y + power.height > player.y
+                ) {
+                    if (power.type === "fire") {
+                        fireRate = 150;
+                        setTimeout(() => { fireRate = 300; }, 5000);
+                    } else {
+                        player.shield = true;
+                        setTimeout(() => { player.shield = false; }, 5000);
+                    }
+                    powerUps.splice(index, 1);
+                }
+            });
+
+            // ボス戦
+            if (score >= 100 && !bossAppeared) {
+                bossAppeared = true;
+                spawnBoss();
+            }
+
+            if (boss) {
+                boss.y += boss.speed;
+                ctx.fillStyle = "purple";
+                ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+
+                if (boss.y > canvas.height) gameOver();
+
+                bullets.forEach((bullet, bIndex) => {
+                    if (
+                        bullet.x < boss.x + boss.width &&
+                        bullet.x + bullet.width > boss.x &&
+                        bullet.y < boss.y + boss.height &&
+                        bullet.y + bullet.height > boss.y
+                    ) {
+                        boss.hp--;
+                        bullets.splice(bIndex, 1);
+                        if (boss.hp <= 0) {
+                            boss = null;
+                            score += 50;
+                            document.getElementById("score").innerText = "Score: " + score;
+                        }
+                    }
+                });
+            }
+
             if (gameRunning) requestAnimationFrame(update);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            if (score > highScore) {
+                localStorage.setItem("highScore", score);
+            }
+            alert("Game Over! Score: " + score);
+            location.reload();
         }
 
         update();

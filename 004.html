@@ -9,11 +9,13 @@
         canvas { display: block; }
         #score { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; font-family: Arial, sans-serif; }
         #highScore { position: absolute; top: 40px; left: 10px; color: yellow; font-size: 20px; font-family: Arial, sans-serif; }
+        #bossHp { position: absolute; top: 70px; left: 10px; color: red; font-size: 20px; font-family: Arial, sans-serif; }
     </style>
 </head>
 <body>
     <div id="score">Score: 0</div>
     <div id="highScore">High Score: 0</div>
+    <div id="bossHp">Boss HP:</div>
     <canvas id="gameCanvas"></canvas>
     
     <script>
@@ -31,6 +33,7 @@
         let enemies = [];
         let powerUps = [];
         let boss = null;
+        let bossBullets = [];
         let gameRunning = true;
         let fireRate = 300;
         let bulletType = "normal"; // "normal", "homing", "blast"
@@ -82,7 +85,22 @@
         }, 1000);
 
         function spawnBoss() {
-            boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: 2, hp: 5 + Math.floor(score / 100) * 3 };
+            const hp = Math.floor(5 * Math.pow(1.2, bossKillCount));
+            const speed = 2 + (0.5 * bossKillCount);
+            boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: speed, hp: hp };
+            document.getElementById("bossHp").innerText = `Boss HP: ${hp}`;
+            // ボスの攻撃開始
+            bossAttack();
+        }
+
+        function bossAttack() {
+            if (boss && gameRunning) {
+                // 3方向に弾を発射
+                bossBullets.push({ x: boss.x + boss.width / 2 - 5, y: boss.y + boss.height, dx: -2, dy: 4 });
+                bossBullets.push({ x: boss.x + boss.width / 2 - 5, y: boss.y + boss.height, dx: 0, dy: 4 });
+                bossBullets.push({ x: boss.x + boss.width / 2 - 5, y: boss.y + boss.height, dx: 2, dy: 4 });
+                setTimeout(bossAttack, 2000);
+            }
         }
 
         function checkCollision(rect1, rect2) {
@@ -107,7 +125,7 @@
         function update() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // プレイヤー描画（パワーアップ中は色変更）
+            // プレイヤー描画
             ctx.fillStyle = player.powerUp ? "cyan" : "white";
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
@@ -133,6 +151,20 @@
                 ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
 
                 return bullet.y > 0 && bullet.x >= 0 && bullet.x <= canvas.width;
+            });
+
+            // ボスの弾更新
+            bossBullets = bossBullets.filter((bullet) => {
+                bullet.y += bullet.dy;
+                bullet.x += bullet.dx;
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(bullet.x, bullet.y, 10, 10);
+                // プレイヤーとの衝突判定
+                if (checkCollision(bullet, player)) {
+                    gameOver();
+                    return false;
+                }
+                return bullet.y < canvas.height;
             });
 
             // パワーアップアイテムの更新
@@ -193,6 +225,8 @@
                         boss.hp -= bullet.damage;
                     }
                 });
+
+                document.getElementById("bossHp").innerText = `Boss HP: ${boss.hp}`;
 
                 if (boss.hp <= 0) {
                     boss = null;

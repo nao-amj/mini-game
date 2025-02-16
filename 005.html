@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>簡易レースゲーム</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>簡易レースゲーム（スマホ対応）</title>
     <style>
         /* 全体設定 */
         body {
@@ -11,6 +11,7 @@
             padding: 0;
             background-color: #222;
             text-align: center;
+            touch-action: manipulation;
         }
 
         /* ゲーム画面 */
@@ -20,6 +21,7 @@
             margin: 20px auto;
             border: 3px solid #fff;
             border-radius: 10px;
+            max-width: 100%;
         }
 
         /* スコア表示 */
@@ -98,6 +100,25 @@
 
         window.addEventListener('keyup', (e) => {
             keys[e.key] = false;
+        });
+
+        // タッチ操作（スマホ対応）
+        window.addEventListener('touchstart', (e) => {
+            const touchX = e.touches[0].clientX;
+            const screenWidth = window.innerWidth;
+
+            if (touchX < screenWidth / 2) {
+                keys['ArrowLeft'] = true;
+                keys['ArrowRight'] = false;
+            } else {
+                keys['ArrowRight'] = true;
+                keys['ArrowLeft'] = false;
+            }
+        });
+
+        window.addEventListener('touchend', (e) => {
+            keys['ArrowLeft'] = false;
+            keys['ArrowRight'] = false;
         });
 
         // ゲームループ

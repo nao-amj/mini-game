@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡易レースゲーム</title>
+    <style>
+        /* 全体設定 */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #222;
+            text-align: center;
+        }
+
+        /* ゲーム画面 */
+        #gameCanvas {
+            background-color: #333;
+            display: block;
+            margin: 20px auto;
+            border: 3px solid #fff;
+            border-radius: 10px;
+        }
+
+        /* スコア表示 */
+        #score {
+            color: #fff;
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        /* ゲームオーバーメッセージ */
+        #gameOver {
+            color: red;
+            font-size: 32px;
+            font-weight: bold;
+            display: none;
+            margin: 20px 0;
+        }
+
+        /* リスタートボタン */
+        #restartBtn {
+            display: none;
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #08f;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #restartBtn:hover {
+            background-color: #06c;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">スコア: 0</div>
+    <div id="gameOver">ゲームオーバー！</div>
+    <button id="restartBtn" onclick="restartGame()">リスタート</button>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+    <script>
+        // Canvas取得とコンテキスト設定
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // ゲーム状態
+        let gameRunning = true;
+        let score = 0;
+        const roadWidth = canvas.width;
+        const laneWidth = roadWidth / 3;
+
+        // プレイヤーの設定
+        const player = {
+            x: laneWidth, // 中央レーン
+            y: canvas.height - 100,
+            width: 60,
+            height: 100,
+            speed: 10
+        };
+
+        // 障害物の設定
+        const obstacles = [];
+        const obstacleWidth = 60;
+        const obstacleHeight = 100;
+        let obstacleSpeed = 5;
+
+        // キー入力管理
+        let keys = {};
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // ゲームループ
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ゲーム更新
+        function update() {
+            // プレイヤー移動
+            if (keys['ArrowLeft'] && player.x > 0) {
+                player.x -= player.speed;
+            }
+            if (keys['ArrowRight'] && player.x + player.width < canvas.width) {
+                player.x += player.speed;
+            }
+
+            // 障害物生成
+            if (Math.random() < 0.03) {
+                const lane = Math.floor(Math.random() * 3);
+                const x = lane * laneWidth + (laneWidth - obstacleWidth) / 2;
+                obstacles.push({
+                    x: x,
+                    y: -obstacleHeight,
+                    width: obstacleWidth,
+                    height: obstacleHeight
+                });
+            }
+
+            // 障害物移動と衝突判定
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].y += obstacleSpeed;
+
+                // 衝突判定
+                if (
+                    player.x < obstacles[i].x + obstacles[i].width &&
+                    player.x + player.width > obstacles[i].x &&
+                    player.y < obstacles[i].y + obstacles[i].height &&
+                    player.y + player.height > obstacles[i].y
+                ) {
+                    gameOver();
+                }
+
+                // 障害物が画面外に出たら削除しスコアを加算
+                if (obstacles[i].y > canvas.height) {
+                    obstacles.splice(i, 1);
+                    score += 10;
+                    document.getElementById('score').innerText = `スコア: ${score}`;
+                }
+            }
+
+            // ゲーム進行に伴い速度上昇
+            obstacleSpeed = 5 + Math.floor(score / 100) * 2;
+        }
+
+        // 描画処理
+        function draw() {
+            // 背景クリア
+            ctx.fillStyle = '#555';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 道路レーン描画
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 4;
+            for (let i = 1; i < 3; i++) {
+                const x = i * laneWidth;
+                ctx.setLineDash([20, 20]);
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            // プレイヤー描画
+            ctx.fillStyle = 'lightblue';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // 障害物描画
+            ctx.fillStyle = 'red';
+            obstacles.forEach(obstacle => {
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            });
+        }
+
+        // ゲームオーバー処理
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('restartBtn').style.display = 'block';
+        }
+
+        // ゲーム再開処理
+        function restartGame() {
+            gameRunning = true;
+            score = 0;
+            obstacleSpeed = 5;
+            obstacles.length = 0;
+            player.x = laneWidth;
+            document.getElementById('score').innerText = `スコア: ${score}`;
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('restartBtn').style.display = 'none';
+            gameLoop();
+        }
+
+        // ゲーム開始
+        gameLoop();
+    </script>
+</body>
+</html>

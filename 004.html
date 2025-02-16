@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galactic Shooter</title>
     <style>
         body { margin: 0; overflow: hidden; background: black; }
@@ -47,11 +48,11 @@
         setInterval(() => {
             if (gameRunning) {
                 if (bulletType === "normal") {
-                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: false });
+                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: false, damage: 1 });
                 } else if (bulletType === "homing") {
-                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: true });
+                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: true, damage: 1 });
                 } else if (bulletType === "laser") {
-                    bullets.push({ x: player.x + player.width / 2 - 2, y: player.y, width: 5, height: canvas.height, dx: 0, homing: false });
+                    bullets.push({ x: player.x + player.width / 2 - 2, y: 0, width: 5, height: canvas.height, dx: 0, homing: false, damage: 5 });
                 }
             }
         }, fireRate);
@@ -71,7 +72,7 @@
         setInterval(() => {
             if (gameRunning && !boss) {
                 let enemyX = Math.random() * (canvas.width - 50);
-                enemies.push({ x: enemyX, y: 0, width: 50, height: 50, speed: 2 });
+                enemies.push({ x: enemyX, y: 0, width: 50, height: 50, speed: 2, hp: 2 });
             }
         }, 1000);
 
@@ -112,11 +113,6 @@
                     }
                 }
 
-                // レーザーの場合は画面最上部まで伸びる
-                if (bulletType === "laser") {
-                    bullet.height = canvas.height;
-                }
-
                 ctx.fillStyle = bullet.homing ? "lime" : (bulletType === "laser" ? "magenta" : "red");
                 ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
 
@@ -154,14 +150,18 @@
 
                 bullets = bullets.filter((bullet) => {
                     if (checkCollision(bullet, enemy)) {
-                        score += 10;
-                        document.getElementById("score").innerText = "Score: " + score;
-                        return bulletType === "laser" ? true : false;
+                        enemy.hp -= bullet.damage;
+                        if (enemy.hp <= 0) {
+                            score += 10;
+                            document.getElementById("score").innerText = "Score: " + score;
+                            return false;
+                        }
+                        return bulletType === "laser"; // レーザーは貫通する
                     }
                     return true;
                 });
 
-                return true;
+                return enemy.hp > 0;
             });
 
             // ボス戦
@@ -177,8 +177,8 @@
 
                 bullets = bullets.filter((bullet) => {
                     if (checkCollision(bullet, boss)) {
-                        boss.hp--;
-                        return bulletType === "laser" ? true : false;
+                        boss.hp -= bullet.damage;
+                        return bulletType === "laser";
                     }
                     return true;
                 });

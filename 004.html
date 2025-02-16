@@ -68,13 +68,12 @@
         let boss = null;
         let bossBullets = [];
         let gameRunning = false;
-        let fireRate = 300;
         let bulletType = "normal";
         let nextBossScore = 100;
         let normalBulletDamage = 1;
         let bossKillCount = 0;
         let missedEnemies = 0;
-        let bossTimer = 30; // 30秒でゲームオーバー
+        let bossTimer = 30;
         let bossTimerInterval;
 
         let enemySpawnInterval = 1000; 
@@ -82,7 +81,6 @@
         let bossFireInterval = 1500;
         let bossBulletSpeed = 4;
 
-        // ゲーム開始
         function startGame(difficulty) {
             document.getElementById("difficultySelection").style.display = "none";
 
@@ -108,7 +106,6 @@
             setInterval(spawnEnemy, enemySpawnInterval);
         }
 
-        // プレイヤー操作
         canvas.addEventListener("touchmove", (event) => {
             let touchX = event.touches[0].clientX;
             let touchY = event.touches[0].clientY;
@@ -116,22 +113,12 @@
             player.y = touchY - player.height / 2;
         });
 
-        // 弾発射
         setInterval(() => {
             if (gameRunning) {
-                if (bulletType === "normal") {
-                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: false, damage: normalBulletDamage });
-                } else if (bulletType === "homing") {
-                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: -2, homing: true, damage: 1 });
-                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: true, damage: 1 });
-                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 2, homing: true, damage: 1 });
-                } else if (bulletType === "blast") {
-                    bullets.push({ x: player.x + player.width / 2 - 15, y: player.y, width: 30, height: 30, dx: 0, homing: false, damage: 25 });
-                }
+                bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, damage: normalBulletDamage });
             }
         }, 500);
 
-        // 敵出現
         function spawnEnemy() {
             if (gameRunning) {
                 let enemyX = Math.random() * (canvas.width - 50);
@@ -139,21 +126,9 @@
             }
         }
 
-        // パワーアップ出現
-        setInterval(() => {
-            if (gameRunning) {
-                let powerX = Math.random() * (canvas.width - 30);
-                let types = ["homing", "blast"];
-                let type = types[Math.floor(Math.random() * types.length)];
-                let color = type === "homing" ? "green" : "purple";
-                powerUps.push({ x: powerX, y: 0, width: 30, height: 30, type: type, color: color });
-            }
-        }, 8000);
-
         function spawnBoss() {
             const hp = Math.floor(bossInitialHp * Math.pow(1.3, bossKillCount));
-            const speed = 2 + (0.5 * bossKillCount);
-            boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: speed, hp: hp };
+            boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: 2, hp: hp };
             document.getElementById("bossHp").innerText = `Boss HP: ${hp}`;
             bossAttack();
             startBossTimer();
@@ -178,9 +153,7 @@
 
         function bossAttack() {
             if (boss && gameRunning) {
-                bossBullets.push({ x: boss.x + boss.width / 2 - 5, y: boss.y + boss.height, dx: -2, dy: bossBulletSpeed });
                 bossBullets.push({ x: boss.x + boss.width / 2 - 5, y: boss.y + boss.height, dx: 0, dy: bossBulletSpeed });
-                bossBullets.push({ x: boss.x + boss.width / 2 - 5, y: boss.y + boss.height, dx: 2, dy: bossBulletSpeed });
                 setTimeout(bossAttack, bossFireInterval);
             }
         }
@@ -194,50 +167,21 @@
             );
         }
 
-        function drawTriangle(x, y, size, color) {
-            ctx.fillStyle = color;
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x - size, y + size);
-            ctx.lineTo(x + size, y + size);
-            ctx.closePath();
-            ctx.fill();
-        }
-
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // プレイヤー描画
-            ctx.fillStyle = player.powerUp ? "cyan" : "white";
+            ctx.fillStyle = "white";
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
-            // 弾更新
             bullets = bullets.filter((bullet) => {
                 bullet.y -= 5;
-                bullet.x += bullet.dx;
-
-                if (bullet.homing && enemies.length > 0) {
-                    let target = enemies.reduce((closest, enemy) => {
-                        let dist = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
-                        return dist < closest.dist ? { dist: dist, enemy: enemy } : closest;
-                    }, { dist: Infinity, enemy: null }).enemy;
-
-                    if (target) {
-                        let angle = Math.atan2(target.y - bullet.y, target.x - bullet.x);
-                        bullet.x += Math.cos(angle) * 3;
-                    }
-                }
-
-                ctx.fillStyle = bullet.homing ? "lime" : (bulletType === "blast" ? "orange" : "red");
+                ctx.fillStyle = "red";
                 ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-
-                return bullet.y > 0 && bullet.x >= 0 && bullet.x <= canvas.width;
+                return bullet.y > 0;
             });
 
-            // ボスの弾更新
             bossBullets = bossBullets.filter((bullet) => {
                 bullet.y += bullet.dy;
-                bullet.x += bullet.dx;
                 ctx.fillStyle = "yellow";
                 ctx.fillRect(bullet.x, bullet.y, 10, 10);
                 if (checkCollision(bullet, player)) {
@@ -247,32 +191,10 @@
                 return bullet.y < canvas.height;
             });
 
-            // パワーアップアイテムの更新
-            powerUps = powerUps.filter((power) => {
-                power.y += 2;
-                drawTriangle(power.x, power.y, 15, power.color);
-
-                if (checkCollision(power, player)) {
-                    if (power.type === "homing") {
-                        bulletType = "homing";
-                        player.powerUp = true;
-                        setTimeout(() => { bulletType = "normal"; player.powerUp = false; }, 5000);
-                    } else if (power.type === "blast") {
-                        bulletType = "blast";
-                        player.powerUp = true;
-                        setTimeout(() => { bulletType = "normal"; player.powerUp = false; }, 5000);
-                    }
-                    return false;
-                }
-                return power.y <= canvas.height;
-            });
-
-            // 敵処理
             enemies = enemies.filter((enemy) => {
                 enemy.y += enemy.speed;
                 ctx.fillStyle = "blue";
                 ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-
                 if (enemy.y > canvas.height) {
                     missedEnemies++;
                     document.getElementById("missedEnemies").innerText = `Missed Enemies: ${missedEnemies}`;
@@ -281,14 +203,12 @@
                     }
                     return false;
                 }
-
                 bullets.forEach((bullet) => {
                     if (checkCollision(bullet, enemy)) {
                         enemy.hp -= bullet.damage;
                         if (enemy.hp <= 0) enemy.hp = 0;
                     }
                 });
-
                 if (enemy.hp <= 0) {
                     score += 10;
                     document.getElementById("score").innerText = "Score: " + score;
@@ -297,7 +217,6 @@
                 return true;
             });
 
-            // ボス戦
             if (score >= nextBossScore && !boss) {
                 spawnBoss();
                 nextBossScore += 200;
@@ -311,12 +230,10 @@
                 bullets.forEach((bullet) => {
                     if (checkCollision(bullet, boss)) {
                         boss.hp -= bullet.damage;
-                        if (boss.hp < 0) boss.hp = 0;
                     }
                 });
 
                 document.getElementById("bossHp").innerText = `Boss HP: ${boss.hp}`;
-
                 if (boss.hp <= 0) {
                     boss = null;
                     stopBossTimer();
@@ -333,7 +250,11 @@
         function gameOver(reason) {
             gameRunning = false;
             stopBossTimer();
-            alert(`Game Over!\n${reason}\nスコア: ${score}\nボス撃破数: ${bossKillCount}\n通常弾ダメージ: ${normalBulletDamage}`);
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("highScore", highScore);
+            }
+            alert(`Game Over!\n${reason}\nスコア: ${score}\nボス撃破数: ${bossKillCount}\n通常弾ダメージ: ${normalBulletDamage}\nハイスコア: ${highScore}`);
             location.reload();
         }
     </script>

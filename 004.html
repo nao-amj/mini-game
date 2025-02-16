@@ -11,6 +11,7 @@
         #highScore { position: absolute; top: 40px; left: 10px; color: yellow; font-size: 20px; font-family: Arial, sans-serif; }
         #bossHp { position: absolute; top: 70px; left: 10px; color: red; font-size: 20px; font-family: Arial, sans-serif; }
         #missedEnemies { position: absolute; top: 100px; left: 10px; color: orange; font-size: 20px; font-family: Arial, sans-serif; }
+        #bossTimer { position: absolute; top: 130px; left: 10px; color: lightgreen; font-size: 20px; font-family: Arial, sans-serif; }
         #difficultySelection {
             position: absolute;
             top: 50%;
@@ -39,6 +40,7 @@
     <div id="highScore">High Score: 0</div>
     <div id="bossHp">Boss HP:</div>
     <div id="missedEnemies">Missed Enemies: 0</div>
+    <div id="bossTimer">Boss Timer: --</div>
     <canvas id="gameCanvas"></canvas>
 
     <!-- 難易度選択画面 -->
@@ -67,11 +69,13 @@
         let bossBullets = [];
         let gameRunning = false;
         let fireRate = 300;
-        let bulletType = "normal"; // "normal", "homing", "blast"
+        let bulletType = "normal";
         let nextBossScore = 100;
         let normalBulletDamage = 1;
         let bossKillCount = 0;
         let missedEnemies = 0;
+        let bossTimer = 30; // 30秒でゲームオーバー
+        let bossTimerInterval;
 
         let enemySpawnInterval = 1000; 
         let bossInitialHp = 100; 
@@ -152,6 +156,24 @@
             boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: speed, hp: hp };
             document.getElementById("bossHp").innerText = `Boss HP: ${hp}`;
             bossAttack();
+            startBossTimer();
+        }
+
+        function startBossTimer() {
+            bossTimer = 30;
+            document.getElementById("bossTimer").innerText = `Boss Timer: ${bossTimer}`;
+            bossTimerInterval = setInterval(() => {
+                bossTimer--;
+                document.getElementById("bossTimer").innerText = `Boss Timer: ${bossTimer}`;
+                if (bossTimer <= 0) {
+                    gameOver("ボスを30秒以内に倒せませんでした！");
+                }
+            }, 1000);
+        }
+
+        function stopBossTimer() {
+            clearInterval(bossTimerInterval);
+            document.getElementById("bossTimer").innerText = `Boss Timer: --`;
         }
 
         function bossAttack() {
@@ -254,8 +276,8 @@
                 if (enemy.y > canvas.height) {
                     missedEnemies++;
                     document.getElementById("missedEnemies").innerText = `Missed Enemies: ${missedEnemies}`;
-                    if (missedEnemies >= 5) {
-                        gameOver("敵が5体以上画面下に到達しました！");
+                    if (missedEnemies >= 3) {
+                        gameOver("敵が3体画面下に到達しました！");
                     }
                     return false;
                 }
@@ -297,6 +319,7 @@
 
                 if (boss.hp <= 0) {
                     boss = null;
+                    stopBossTimer();
                     score += 50;
                     bossKillCount++;
                     normalBulletDamage += 1;
@@ -309,6 +332,7 @@
 
         function gameOver(reason) {
             gameRunning = false;
+            stopBossTimer();
             alert(`Game Over!\n${reason}\nスコア: ${score}\nボス撃破数: ${bossKillCount}\n通常弾ダメージ: ${normalBulletDamage}`);
             location.reload();
         }

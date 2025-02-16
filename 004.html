@@ -10,6 +10,27 @@
         #score { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; font-family: Arial, sans-serif; }
         #highScore { position: absolute; top: 40px; left: 10px; color: yellow; font-size: 20px; font-family: Arial, sans-serif; }
         #bossHp { position: absolute; top: 70px; left: 10px; color: red; font-size: 20px; font-family: Arial, sans-serif; }
+        #difficultySelection {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            font-size: 24px;
+        }
+        .difficulty-btn {
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            color: white;
+        }
+        .easy { background-color: green; }
+        .normal { background-color: blue; }
+        .hard { background-color: red; }
     </style>
 </head>
 <body>
@@ -17,6 +38,14 @@
     <div id="highScore">High Score: 0</div>
     <div id="bossHp">Boss HP:</div>
     <canvas id="gameCanvas"></canvas>
+
+    <!-- 難易度選択画面 -->
+    <div id="difficultySelection">
+        <h2>難易度を選択してください</h2>
+        <button class="difficulty-btn easy" onclick="startGame('easy')">Easy</button>
+        <button class="difficulty-btn normal" onclick="startGame('normal')">Normal</button>
+        <button class="difficulty-btn hard" onclick="startGame('hard')">Hard</button>
+    </div>
     
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -34,12 +63,39 @@
         let powerUps = [];
         let boss = null;
         let bossBullets = [];
-        let gameRunning = true;
+        let gameRunning = false;
         let fireRate = 300;
         let bulletType = "normal"; // "normal", "homing", "blast"
         let nextBossScore = 100;
         let normalBulletDamage = 1;
         let bossKillCount = 0;
+
+        let enemySpawnInterval = 1000; 
+        let bossInitialHp = 100; 
+        let bossFireInterval = 1500;
+
+        // ゲーム開始
+        function startGame(difficulty) {
+            document.getElementById("difficultySelection").style.display = "none";
+
+            if (difficulty === 'easy') {
+                enemySpawnInterval = 1500;
+                bossInitialHp = 50;
+                bossFireInterval = 2000;
+            } else if (difficulty === 'normal') {
+                enemySpawnInterval = 1000;
+                bossInitialHp = 100;
+                bossFireInterval = 1500;
+            } else if (difficulty === 'hard') {
+                enemySpawnInterval = 700;
+                bossInitialHp = 150;
+                bossFireInterval = 1000;
+            }
+
+            gameRunning = true;
+            gameLoop();
+            setInterval(spawnEnemy, enemySpawnInterval);
+        }
 
         // プレイヤー操作
         canvas.addEventListener("touchmove", (event) => {
@@ -55,7 +111,6 @@
                 if (bulletType === "normal") {
                     bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: false, damage: normalBulletDamage });
                 } else if (bulletType === "homing") {
-                    // 3方向に発射
                     bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: -2, homing: true, damage: 1 });
                     bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: true, damage: 1 });
                     bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 2, homing: true, damage: 1 });
@@ -64,6 +119,14 @@
                 }
             }
         }, fireRate);
+
+        // 敵出現
+        function spawnEnemy() {
+            if (gameRunning) {
+                let enemyX = Math.random() * (canvas.width - 50);
+                enemies.push({ x: enemyX, y: 0, width: 50, height: 50, speed: 2, hp: 3 });
+            }
+        }
 
         // パワーアップ出現
         setInterval(() => {
@@ -76,30 +139,20 @@
             }
         }, 8000);
 
-        // 敵出現
-        setInterval(() => {
-            if (gameRunning) {
-                let enemyX = Math.random() * (canvas.width - 50);
-                enemies.push({ x: enemyX, y: 0, width: 50, height: 50, speed: 2, hp: 3 });
-            }
-        }, 1000);
-
         function spawnBoss() {
-            const hp = Math.floor(5 * Math.pow(1.2, bossKillCount));
+            const hp = Math.floor(bossInitialHp * Math.pow(1.3, bossKillCount));
             const speed = 2 + (0.5 * bossKillCount);
             boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: speed, hp: hp };
             document.getElementById("bossHp").innerText = `Boss HP: ${hp}`;
-            // ボスの攻撃開始
             bossAttack();
         }
 
         function bossAttack() {
             if (boss && gameRunning) {
-                // 3方向に弾を発射
                 bossBullets.push({ x: boss.x + boss.width / 2 - 5, y: boss.y + boss.height, dx: -2, dy: 4 });
                 bossBullets.push({ x: boss.x + boss.width / 2 - 5, y: boss.y + boss.height, dx: 0, dy: 4 });
                 bossBullets.push({ x: boss.x + boss.width / 2 - 5, y: boss.y + boss.height, dx: 2, dy: 4 });
-                setTimeout(bossAttack, 2000);
+                setTimeout(bossAttack, bossFireInterval);
             }
         }
 
@@ -122,7 +175,7 @@
             ctx.fill();
         }
 
-        function update() {
+        function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // プレイヤー描画
@@ -134,7 +187,6 @@
                 bullet.y -= 5;
                 bullet.x += bullet.dx;
 
-                // ホーミング弾の追尾処理
                 if (bullet.homing && enemies.length > 0) {
                     let target = enemies.reduce((closest, enemy) => {
                         let dist = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
@@ -159,7 +211,6 @@
                 bullet.x += bullet.dx;
                 ctx.fillStyle = "yellow";
                 ctx.fillRect(bullet.x, bullet.y, 10, 10);
-                // プレイヤーとの衝突判定
                 if (checkCollision(bullet, player)) {
                     gameOver();
                     return false;
@@ -198,6 +249,9 @@
                 bullets.forEach((bullet) => {
                     if (checkCollision(bullet, enemy)) {
                         enemy.hp -= bullet.damage;
+                        if (enemy.hp <= 0) {
+                            enemy.hp = 0;
+                        }
                     }
                 });
 
@@ -223,6 +277,7 @@
                 bullets.forEach((bullet) => {
                     if (checkCollision(bullet, boss)) {
                         boss.hp -= bullet.damage;
+                        if (boss.hp <= 0) boss.hp = 0;
                     }
                 });
 
@@ -232,12 +287,12 @@
                     boss = null;
                     score += 50;
                     bossKillCount++;
-                    normalBulletDamage += 1; // ボス撃破で通常弾強化
+                    normalBulletDamage += 1;
                     document.getElementById("score").innerText = "Score: " + score;
                 }
             }
 
-            if (gameRunning) requestAnimationFrame(update);
+            if (gameRunning) requestAnimationFrame(gameLoop);
         }
 
         function gameOver() {
@@ -245,8 +300,6 @@
             alert(`Game Over! Score: ${score}\nボス撃破数: ${bossKillCount}\n通常弾ダメージ: ${normalBulletDamage}`);
             location.reload();
         }
-
-        update();
     </script>
 </body>
 </html>

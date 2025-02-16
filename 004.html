@@ -33,7 +33,7 @@
         let boss = null;
         let gameRunning = true;
         let fireRate = 300;
-        let bulletType = "normal"; // "normal", "homing", "laser"
+        let bulletType = "normal"; // "normal", "homing", "blast"
         let nextBossScore = 100;
         let normalBulletDamage = 1;
         let bossKillCount = 0;
@@ -56,8 +56,8 @@
                     bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: -2, homing: true, damage: 1 });
                     bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: true, damage: 1 });
                     bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 2, homing: true, damage: 1 });
-                } else if (bulletType === "laser") {
-                    bullets.push({ x: player.x + player.width / 2 - 10, y: 0, width: 20, height: canvas.height, dx: 0, homing: false, damage: 30 });
+                } else if (bulletType === "blast") {
+                    bullets.push({ x: player.x + player.width / 2 - 15, y: player.y, width: 30, height: 30, dx: 0, homing: false, damage: 50 });
                 }
             }
         }, fireRate);
@@ -66,14 +66,14 @@
         setInterval(() => {
             if (gameRunning) {
                 let powerX = Math.random() * (canvas.width - 30);
-                let types = ["homing", "laser"];
+                let types = ["homing", "blast"];
                 let type = types[Math.floor(Math.random() * types.length)];
                 let color = type === "homing" ? "green" : "purple";
                 powerUps.push({ x: powerX, y: 0, width: 30, height: 30, type: type, color: color });
             }
         }, 8000);
 
-        // 敵出現（常に動作するよう修正）
+        // 敵出現
         setInterval(() => {
             if (gameRunning) {
                 let enemyX = Math.random() * (canvas.width - 50);
@@ -129,7 +129,7 @@
                     }
                 }
 
-                ctx.fillStyle = bullet.homing ? "lime" : (bulletType === "laser" ? "magenta" : "red");
+                ctx.fillStyle = bullet.homing ? "lime" : (bulletType === "blast" ? "orange" : "red");
                 ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
 
                 return bullet.y > 0 && bullet.x >= 0 && bullet.x <= canvas.width;
@@ -145,8 +145,8 @@
                         bulletType = "homing";
                         player.powerUp = true;
                         setTimeout(() => { bulletType = "normal"; player.powerUp = false; }, 5000);
-                    } else if (power.type === "laser") {
-                        bulletType = "laser";
+                    } else if (power.type === "blast") {
+                        bulletType = "blast";
                         player.powerUp = true;
                         setTimeout(() => { bulletType = "normal"; player.powerUp = false; }, 5000);
                     }

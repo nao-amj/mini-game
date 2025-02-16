@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Shooter</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: black; }
+        canvas { display: block; }
+        #score { position: absolute; top: 10px; left: 10px; color: white; font-size: 20px; font-family: Arial, sans-serif; }
+        #highScore { position: absolute; top: 40px; left: 10px; color: yellow; font-size: 20px; font-family: Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="highScore">High Score: 0</div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let score = 0;
+        let highScore = localStorage.getItem("highScore") || 0;
+        document.getElementById("highScore").innerText = "High Score: " + highScore;
+
+        let player = { x: canvas.width / 2, y: canvas.height - 80, width: 50, height: 50, powerUp: null };
+        let bullets = [];
+        let enemies = [];
+        let powerUps = [];
+        let boss = null;
+        let gameRunning = true;
+        let fireRate = 300;
+        let bulletType = "normal"; // "normal", "homing", "laser"
+        let nextBossScore = 100;
+
+        // プレイヤー操作
+        canvas.addEventListener("touchmove", (event) => {
+            let touchX = event.touches[0].clientX;
+            let touchY = event.touches[0].clientY;
+            player.x = touchX - player.width / 2;
+            player.y = touchY - player.height / 2;
+        });
+
+        // 弾発射
+        setInterval(() => {
+            if (gameRunning) {
+                if (bulletType === "normal") {
+                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: false });
+                } else if (bulletType === "homing") {
+                    bullets.push({ x: player.x + player.width / 2 - 5, y: player.y, width: 10, height: 20, dx: 0, homing: true });
+                } else if (bulletType === "laser") {
+                    bullets.push({ x: player.x + player.width / 2 - 2, y: player.y, width: 5, height: canvas.height, dx: 0, homing: false });
+                }
+            }
+        }, fireRate);
+
+        // パワーアップ出現
+        setInterval(() => {
+            if (gameRunning) {
+                let powerX = Math.random() * (canvas.width - 30);
+                let types = ["homing", "laser"];
+                let type = types[Math.floor(Math.random() * types.length)];
+                let color = type === "homing" ? "green" : "purple";
+                powerUps.push({ x: powerX, y: 0, width: 30, height: 30, type: type, color: color });
+            }
+        }, 10000);
+
+        // 敵出現
+        setInterval(() => {
+            if (gameRunning && !boss) {
+                let enemyX = Math.random() * (canvas.width - 50);
+                enemies.push({ x: enemyX, y: 0, width: 50, height: 50, speed: 2 });
+            }
+        }, 1000);
+
+        function spawnBoss() {
+            boss = { x: canvas.width / 2 - 75, y: 50, width: 150, height: 150, speed: 2, hp: 10 + Math.floor(score / 100) * 5 };
+        }
+
+        function checkCollision(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.width > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.height > rect2.y
+            );
+        }
+
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // プレイヤー描画（パワーアップ中は色変更）
+            ctx.fillStyle = player.powerUp ? "cyan" : "white";
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // 弾更新
+            bullets = bullets.filter((bullet) => {
+                bullet.y -= 5;
+
+                // ホーミング弾の追尾処理
+                if (bullet.homing && enemies.length > 0) {
+                    let target = enemies.reduce((closest, enemy) => {
+                        let dist = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
+                        return dist < closest.dist ? { dist: dist, enemy: enemy } : closest;
+                    }, { dist: Infinity, enemy: null }).enemy;
+
+                    if (target) {
+                        let angle = Math.atan2(target.y - bullet.y, target.x - bullet.x);
+                        bullet.x += Math.cos(angle) * 3;
+                    }
+                }
+
+                // レーザーの場合は画面最上部まで伸びる
+                if (bulletType === "laser") {
+                    bullet.height = canvas.height;
+                }
+
+                ctx.fillStyle = bullet.homing ? "lime" : (bulletType === "laser" ? "magenta" : "red");
+                ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+
+                return bullet.y > 0;
+            });
+
+            // パワーアップアイテムの更新
+            powerUps = powerUps.filter((power) => {
+                power.y += 2;
+                ctx.fillStyle = power.color;
+                ctx.fillRect(power.x, power.y, power.width, power.height);
+
+                if (checkCollision(power, player)) {
+                    if (power.type === "homing") {
+                        bulletType = "homing";
+                        player.powerUp = true;
+                        setTimeout(() => { bulletType = "normal"; player.powerUp = false; }, 5000);
+                    } else if (power.type === "laser") {
+                        bulletType = "laser";
+                        player.powerUp = true;
+                        setTimeout(() => { bulletType = "normal"; player.powerUp = false; }, 5000);
+                    }
+                    return false;
+                }
+                return power.y <= canvas.height;
+            });
+
+            // 敵処理
+            enemies = enemies.filter((enemy) => {
+                enemy.y += enemy.speed;
+                ctx.fillStyle = "blue";
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+                if (enemy.y > canvas.height) gameOver();
+
+                bullets = bullets.filter((bullet) => {
+                    if (checkCollision(bullet, enemy)) {
+                        score += 10;
+                        document.getElementById("score").innerText = "Score: " + score;
+                        return bulletType === "laser" ? true : false;
+                    }
+                    return true;
+                });
+
+                return true;
+            });
+
+            // ボス戦
+            if (score >= nextBossScore && !boss) {
+                spawnBoss();
+                nextBossScore += 200;
+            }
+
+            if (boss) {
+                boss.y += boss.speed;
+                ctx.fillStyle = "purple";
+                ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+
+                bullets = bullets.filter((bullet) => {
+                    if (checkCollision(bullet, boss)) {
+                        boss.hp--;
+                        return bulletType === "laser" ? true : false;
+                    }
+                    return true;
+                });
+
+                if (boss.hp <= 0) {
+                    boss = null;
+                    score += 50;
+                    document.getElementById("score").innerText = "Score: " + score;
+                }
+            }
+
+            if (gameRunning) requestAnimationFrame(update);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            alert("Game Over! Score: " + score);
+            location.reload();
+        }
+
+        update();
+    </script>
+</body>
+</html>

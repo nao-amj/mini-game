@@ -1,0 +1,1866 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>破壊の境界線 - ビジュアルノベルエディター</title>
+    <style>
+        :root {
+            --primary-color: #1a1a2e;
+            --secondary-color: #16213e;
+            --accent-color: #0f3460;
+            --text-color: #e7e7e7;
+            --highlight-color: #4CAF50;
+            --danger-color: #e94560;
+            --border-color: #424242;
+            --menu-color: #121212;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans JP', 'Meiryo', sans-serif;
+        }
+
+        body {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--secondary-color);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            margin-left: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--highlight-color);
+        }
+
+        button.danger {
+            background-color: var(--danger-color);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: var(--secondary-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-menu {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--menu-color);
+        }
+
+        .sidebar-menu h3 {
+            margin-bottom: 10px;
+            font-size: 1rem;
+            color: var(--highlight-color);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .project-item, .character-item, .chapter-item, .branch-item {
+            padding: 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .project-item:hover, .character-item:hover, .chapter-item:hover, .branch-item:hover {
+            background-color: var(--accent-color);
+        }
+
+        .selected {
+            background-color: var(--accent-color);
+            border-left: 3px solid var(--highlight-color);
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-tabs {
+            display: flex;
+            background-color: var(--secondary-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .tab.active {
+            background-color: var(--accent-color);
+            border-bottom: 2px solid var(--highlight-color);
+        }
+
+        .tab-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .script-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .toolbar {
+            padding: 10px;
+            background-color: var(--secondary-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toolbar select, .toolbar input {
+            padding: 5px;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .text-editor {
+            flex: 2;
+            padding: 20px;
+            background-color: var(--primary-color);
+            overflow-y: auto;
+        }
+
+        .text-editor textarea {
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            resize: none;
+            font-size: 1rem;
+            line-height: 1.5;
+            padding: 10px;
+        }
+
+        .preview-panel {
+            flex: 1;
+            background-color: var(--secondary-color);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            padding: 10px;
+            background-color: var(--menu-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .preview-screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .character-display {
+            display: flex;
+            justify-content: center;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .character-display img {
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .background-display {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .dialog-box {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: auto;
+        }
+
+        .speaker-name {
+            color: var(--highlight-color);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .dialog-text {
+            line-height: 1.5;
+        }
+
+        .branch-editor {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .branch-diagram {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+        }
+
+        /* ノードとエッジの基本スタイル */
+        .node {
+            width: 200px;
+            padding: 10px;
+            background-color: var(--secondary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            position: absolute;
+            cursor: move;
+        }
+
+        .node-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--highlight-color);
+        }
+
+        .node-content {
+            font-size: 0.9rem;
+        }
+
+        .edge {
+            position: absolute;
+            border-top: 2px solid var(--highlight-color);
+            z-index: -1;
+        }
+
+        .character-editor {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .character-list {
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+            padding: 10px;
+        }
+
+        .character-detail {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .character-form {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .character-form label {
+            font-weight: bold;
+        }
+
+        .character-form input, .character-form textarea, .character-form select {
+            padding: 8px;
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .character-form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .expression-list {
+            margin-top: 20px;
+        }
+
+        .expression-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: var(--secondary-color);
+            border-radius: 4px;
+        }
+
+        .expression-preview {
+            width: 80px;
+            height: 80px;
+            background-color: var(--accent-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 4px;
+        }
+
+        .expression-info {
+            flex: 1;
+        }
+
+        .status-bar {
+            padding: 5px 10px;
+            background-color: var(--menu-color);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+        }
+
+        .dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .dialog-content {
+            background-color: var(--secondary-color);
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            padding: 20px;
+        }
+
+        .dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .dialog-header h2 {
+            font-size: 1.2rem;
+            color: var(--highlight-color);
+        }
+
+        .dialog-close {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .dialog-body {
+            margin-bottom: 20px;
+        }
+
+        .dialog-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* 追加機能のスタイル */
+        .hidden {
+            display: none;
+        }
+
+        /* トースト通知用スタイル */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            padding: 10px 15px;
+            margin-top: 10px;
+            background-color: var(--highlight-color);
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .toast.error {
+            background-color: var(--danger-color);
+        }
+
+        /* ヘルプ用スタイル */
+        .help-panel {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .help-section {
+            margin-bottom: 20px;
+        }
+
+        .help-section h3 {
+            color: var(--highlight-color);
+            margin-bottom: 10px;
+        }
+
+        .help-section p, .help-section ul {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .help-section ul {
+            padding-left: 20px;
+        }
+
+        .help-section code {
+            background-color: var(--secondary-color);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <h1>破壊の境界線 - ビジュアルノベルエディター</h1>
+        </div>
+        <div class="controls">
+            <button id="new-project-btn">新規プロジェクト</button>
+            <button id="open-project-btn">プロジェクトを開く</button>
+            <button id="save-project-btn">保存</button>
+            <button id="export-btn">エクスポート</button>
+            <button id="settings-btn">設定</button>
+            <button id="help-btn">ヘルプ</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="sidebar-menu">
+                <h3>プロジェクト</h3>
+            </div>
+            <div class="sidebar-content" id="project-tree">
+                <div class="project-item selected">破壊の境界線</div>
+                
+                <div class="sidebar-menu">
+                    <h3>キャラクター</h3>
+                </div>
+                <div class="character-item">霧島 鈴音</div>
+                <div class="character-item">風間 遥</div>
+                <div class="character-item">神宮寺 零</div>
+                <div class="character-item">月影 アシュラ</div>
+                <div class="character-item">桐生 陽炎</div>
+                
+                <div class="sidebar-menu">
+                    <h3>チャプター</h3>
+                </div>
+                <div class="chapter-item">序章: 運命の日</div>
+                <div class="chapter-item selected">第1章: 現実の亀裂</div>
+                <div class="chapter-item">第2章: 境界管理局</div>
+                
+                <div class="sidebar-menu">
+                    <h3>分岐</h3>
+                </div>
+                <div class="branch-item">神宮寺との対話</div>
+                <div class="branch-item">月影との邂逅</div>
+                <div class="branch-item">最終選択</div>
+            </div>
+        </div>
+
+        <div class="editor-container">
+            <div class="editor-tabs">
+                <div class="tab active" data-tab="script">スクリプト</div>
+                <div class="tab" data-tab="branch">分岐エディター</div>
+                <div class="tab" data-tab="character">キャラクターエディター</div>
+                <div class="tab" data-tab="settings">シーン設定</div>
+                <div class="tab" data-tab="help">ヘルプ</div>
+            </div>
+
+            <div class="tab-content">
+                <!-- スクリプトエディター -->
+                <div class="script-editor" id="script-tab-content">
+                    <div class="toolbar">
+                        <select id="character-select">
+                            <option value="">キャラクター選択</option>
+                            <option value="rinne">霧島 鈴音</option>
+                            <option value="haruka">風間 遥</option>
+                            <option value="rei">神宮寺 零</option>
+                            <option value="ashura">月影 アシュラ</option>
+                            <option value="kagero">桐生 陽炎</option>
+                        </select>
+                        <select id="expression-select">
+                            <option value="">表情選択</option>
+                            <option value="normal">通常</option>
+                            <option value="smile">笑顔</option>
+                            <option value="sad">悲しみ</option>
+                            <option value="angry">怒り</option>
+                            <option value="surprised">驚き</option>
+                        </select>
+                        <select id="background-select">
+                            <option value="">背景選択</option>
+                            <option value="office">管理局オフィス</option>
+                            <option value="city">都市風景</option>
+                            <option value="ruins">崩壊現場</option>
+                            <option value="subway">地下鉄構内</option>
+                        </select>
+                        <button id="insert-dialog">ダイアログ挿入</button>
+                        <button id="insert-choice">選択肢挿入</button>
+                        <button id="insert-effect">エフェクト挿入</button>
+                    </div>
+                    <div class="editor-area">
+                        <div class="text-editor">
+                            <textarea id="script-textarea" placeholder="スクリプトを入力してください...">// 第1章: 現実の亀裂
+
+@背景 管理局オフィス
+@BGM 日常_穏やか
+
+「霧島、今日も元気ないわね」
+
+@キャラ 風間遥 表示 右 通常
+
+私は資料から目を上げた。管理局の調査室は、今日も無機質な白い光に満ちていた。窓のない空間。外の世界から隔離された、箱の中の世界。
+
+@キャラ 霧島鈴音 表示 左 無表情
+
+「...別に。いつも通りよ」
+
+答えながら、私は無意識に首のチョーカーに触れていた。これは見た目のアクセサリーではない。私の能力を制御する装置だ。
+
+@キャラ 風間遥 表情 心配
+
+「また面会日のことを考えてた？」
+
+遥は鋭い。いつも私の心の動きを見抜く。それが彼女の能力というわけではなく、純粋に私のことを理解しているからだろう。
+
+@キャラ 霧島鈴音 表情 悲しみ
+
+「...」
+
+答えなかったが、それが答えになった。遥はため息をついて、私の向かいの椅子に腰を下ろした。
+
+@キャラ 風間遥 表情 優しい
+
+「無理しないで。誰にだって休息は必要よ。特に昨日のような任務の後は」
+
+@効果音 回想_フラッシュバック
+
+昨日の任務。思い出したくもない惨状だった。暴走した越境者の少女。彼女は「加速」の能力を持っており、自分と触れたものの分子振動を高速化させることができた。結果、彼女の周囲の人間は沸騰し、建物は爆発的に崩壊していた。
+
+@背景 崩壊現場
+@エフェクト フラッシュバック_開始
+
+私たちは彼女を制止するために派遣された。そして私は...
+
+@エフェクト フラッシュバック_終了
+@背景 管理局オフィス
+
+@キャラ 霧島鈴音 表情 冷たい
+
+「私はただ、任務を遂行しただけ」
+
+冷たい声で言い放つ。手元の資料を閉じる。そこには昨日の「処理済」の文字が赤いスタンプで押されていた。
+
+@キャラ 風間遥 表情 優しい
+
+「鈴音...」
+
+遥が優しく呼びかける。彼女は数少ない、私の本名で呼んでくれる人間だ。
+
+@選択肢 任務について
+- 「彼女を助けることはできなかったの？」
+  @ジャンプ 選択肢1_A
+- 「今日の予定は？」
+  @ジャンプ 選択肢1_B
+
+#選択肢1_A
+@キャラ 風間遥 表情 質問
+
+「彼女を助けることはできなかったの？」と遥は尋ねる。
+
+@キャラ 霧島鈴音 表情 悲しみ
+
+「彼女は既に制御不能だった。チョーカーを付けても無駄だった。私は彼女の能力を...止めるしかなかった」
+
+「崩壊」の能力。私の能力は、接触したものの分子構造を不安定化させ、文字通り崩壊させることができる。通常は自分の意思で制限し、特定の物質や限定的な範囲にのみ適用している。しかし昨日は、あの少女の能力そのものを標的にした。
+
+少女は生きている。だが彼女の能力は、もう二度と発現することはない。私が「崩壊」させたからだ。
+
+@キャラ 風間遥 表情 励まし
+
+「そうね...でも、次はもっと良い方法が見つかるかもしれない」
+
+遥は常に前向きだ。私とは正反対の性格。だからこそ、彼女は私のバランサーになっている。
+
+@ジャンプ 共通ルート1
+
+#選択肢1_B
+@キャラ 霧島鈴音 表情 無表情
+
+「今日の予定は？」と私は話題を変えた。
+
+@キャラ 風間遥 表情 通常
+
+「ああ、そうそう」遥は思い出したように手元のタブレットを操作する。「丁度連絡が来たところよ。新しい事件が発生したわ」
+
+@ジャンプ 共通ルート1
+
+#共通ルート1
+@キャラ 霧島鈴音 表情 真剣
+
+「越境者絡み？」
+
+@キャラ 風間遥 表情 説明
+
+「まだ確認中。でも特徴的な痕跡があるの。高層ビルの一部が不可解に崩壊する現象。建築や構造の専門家が調査したけど、通常の劣化や事故では説明がつかないらしいわ」
+
+@キャラ 霧島鈴音 表情 質問
+
+「場所は？」
+
+@キャラ 風間遥 表情 通常
+
+「東京駅近くの超高層ビル。現場には既に初動捜査チームが入っているわ」
+
+@キャラ 霧島鈴音 表情 決意
+@SE コート_着る音
+
+私は立ち上がり、黒いコートを手に取った。
+
+「行きましょう」
+
+@キャラ 風間遥 表情 驚き
+
+「あ、そうそう。現場から送られてきた画像があるの。これ」
+
+@画像表示 幾何学模様
+
+遥がタブレットに映し出した画像を見て、私は息を呑んだ。崩壊した建物の壁面に、幾何学的な模様が浮かび上がっている。まるで現実が歪み、裂けたかのような亀裂。
+
+@画像非表示
+
+@キャラ 風間遥 表情 説明
+
+「これで3件目よ」と遥が言った。「同じパターンの現象が先月から発生している。今回が最大規模ね」</textarea>
+                        </div>
+                        <div class="preview-panel">
+                            <div class="preview-header">
+                                <h3>プレビュー</h3>
+                            </div>
+                            <div class="preview-screen">
+                                <div class="character-display">
+                                    <img src="/api/placeholder/250/400" alt="キャラクター" />
+                                </div>
+                                <div class="dialog-box">
+                                    <div class="speaker-name">霧島 鈴音</div>
+                                    <div class="dialog-text">「...別に。いつも通りよ」</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 分岐エディター -->
+                <div class="branch-editor hidden" id="branch-tab-content">
+                    <div class="toolbar">
+                        <button id="add-node">ノード追加</button>
+                        <button id="add-edge">接続追加</button>
+                        <button id="delete-selected">削除</button>
+                        <button id="auto-arrange">自動整列</button>
+                    </div>
+                    <div class="branch-diagram">
+                        <!-- ノードとエッジは動的に生成 -->
+                        <div class="node" style="top: 50px; left: 50px;">
+                            <div class="node-title">開始: 第1章</div>
+                            <div class="node-content">管理局での会話から始まる章</div>
+                        </div>
+                        
+                        <div class="node" style="top: 150px; left: 300px;">
+                            <div class="node-title">選択肢: 任務について</div>
+                            <div class="node-content">遥との会話での選択肢</div>
+                        </div>
+                        
+                        <div class="node" style="top: 300px; left: 150px;">
+                            <div class="node-title">ルートA: 少女の件</div>
+                            <div class="node-content">少女の能力を崩壊させた件について</div>
+                        </div>
+                        
+                        <div class="node" style="top: 300px; left: 450px;">
+                            <div class="node-title">ルートB: 話題転換</div>
+                            <div class="node-content">今日の予定について尋ねる</div>
+                        </div>
+                        
+                        <div class="node" style="top: 450px; left: 300px;">
+                            <div class="node-title">共通: 新たな事件</div>
+                            <div class="node-content">東京駅近くの超高層ビル崩壊事件</div>
+                        </div>
+                        
+                        <!-- エッジは疑似的な表現 -->
+                        <div class="edge" style="width: 250px; top: 65px; left: 150px; transform: rotate(20deg);"></div>
+                        <div class="edge" style="width: 150px; top: 200px; left: 160px; transform: rotate(100deg);"></div>
+                        <div class="edge" style="width: 150px; top: 200px; left: 400px; transform: rotate(80deg);"></div>
+                        <div class="edge" style="width: 150px; top: 365px; left: 160px; transform: rotate(-60deg);"></div>
+                        <div class="edge" style="width: 150px; top: 365px; left: 410px; transform: rotate(240deg);"></div>
+                    </div>
+                </div>
+
+                <!-- キャラクターエディター -->
+                <div class="character-editor hidden" id="character-tab-content">
+                    <div class="character-list">
+                        <h3>キャラクター一覧</h3>
+                        <div class="character-item selected">霧島 鈴音</div>
+                        <div class="character-item">風間 遥</div>
+                        <div class="character-item">神宮寺 零</div>
+                        <div class="character-item">月影 アシュラ</div>
+                        <div class="character-item">桐生 陽炎</div>
+                        <button id="add-character-btn" style="margin-top: 10px; width: 100%;">新規キャラクター追加</button>
+                    </div>
+                    <div class="character-detail">
+                        <h2>キャラクター詳細</h2>
+                        <div class="character-form">
+                            <label for="char-name">名前:</label>
+                            <input type="text" id="char-name" value="霧島 鈴音">
+                            
+                            <label for="char-name-ruby">ふりがな:</label>
+                            <input type="text" id="char-name-ruby" value="きりしま りんね">
+                            
+                            <label for="char-codename">コードネーム:</label>
+                            <input type="text" id="char-codename" value="オブリビオン">
+                            
+                            <label for="char-age">年齢:</label>
+                            <input type="number" id="char-age" value="23">
+                            
+                            <label for="char-occupation">職業:</label>
+                            <input type="text" id="char-occupation" value="境界管理局・特殊能力捜査官">
+                            
+                            <label for="char-ability">能力:</label>
+                            <input type="text" id="char-ability" value="崩壊">
+                            
+                            <label for="char-ability-desc">能力説明:</label>
+                            <textarea id="char-ability-desc">接触したものの分子構造を不安定化させ、崩壊させることができる。通常は自分の意思で制限し、特定の物質や限定的な範囲にのみ適用している。</textarea>
+                            
+                            <label for="char-personality">性格:</label>
+                            <textarea id="char-personality">クールで寡黙だが内面は情熱的。任務には真摯に向き合うが、自分の能力に対する恐れと葛藤を抱えている。</textarea>
+                            
+                            <label for="char-background">背景:</label>
+                            <textarea id="char-background">幼少期に能力が暴走し、両親を失う事故を引き起こした。その後、特殊能力者を管理する政府機関「境界管理局」に保護され、能力の制御方法と使い方を学んだ。</textarea>
+                            
+                            <label for="char-color">テーマカラー:</label>
+                            <input type="color" id="char-color" value="#4CAF50">
+                            
+                            <label for="char-voice">声優:</label>
+                            <input type="text" id="char-voice" value="未定">
+                        </div>
+                        
+                        <h3 style="margin-top: 20px;">表情設定</h3>
+                        <div class="expression-list">
+                            <div class="expression-item">
+                                <div class="expression-preview">
+                                    <img src="/api/placeholder/80/80" alt="表情">
+                                </div>
+                                <div class="expression-info">
+                                    <h4>通常</h4>
+                                    <p>基本的な表情</p>
+                                    <button class="small-btn">編集</button>
+                                </div>
+                            </div>
+                            <div class="expression-item">
+                                <div class="expression-preview">
+                                    <img src="/api/placeholder/80/80" alt="表情">
+                                </div>
+                                <div class="expression-info">
+                                    <h4>笑顔</h4>
+                                    <p>穏やかな笑顔</p>
+                                    <button class="small-btn">編集</button>
+                                </div>
+                            </div>
+                            <div class="expression-item">
+                                <div class="expression-preview">
+                                    <img src="/api/placeholder/80/80" alt="表情">
+                                </div>
+                                <div class="expression-info">
+                                    <h4>悲しみ</h4>
+                                    <p>悲しい表情</p>
+                                    <button class="small-btn">編集</button>
+                                </div>
+                            </div>
+                            <div class="expression-item">
+                                <div class="expression-preview">
+                                    <img src="/api/placeholder/80/80" alt="表情">
+                                </div>
+                                <div class="expression-info">
+                                    <h4>怒り</h4>
+                                    <p>怒りの表情</p>
+                                    <button class="small-btn">編集</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="add-expression-btn" style="margin-top: 10px;">表情追加</button>
+                        
+                        <h3 style="margin-top: 20px;">ボイス設定</h3>
+                        <div class="voice-settings">
+                            <button>ボイスサンプルを録音</button>
+                            <button>ボイスサンプルをインポート</button>
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: right;">
+                            <button id="save-character-btn">キャラクター情報を保存</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- シーン設定 -->
+                <div class="settings-editor hidden" id="settings-tab-content">
+                    <div style="padding: 20px;">
+                        <h2>シーン設定</h2>
+                        
+                        <div style="margin-top: 20px;">
+                            <h3>基本情報</h3>
+                            <div class="character-form" style="margin-top: 10px;">
+                                <label for="scene-id">シーンID:</label>
+                                <input type="text" id="scene-id" value="chapter1_reality_crack">
+                                
+                                <label for="scene-title">シーンタイトル:</label>
+                                <input type="text" id="scene-title" value="第1章: 現実の亀裂">
+                                
+                                <label for="scene-description">シーン説明:</label>
+                                <textarea id="scene-description">管理局での日常から始まり、東京駅の崩壊現場へと向かうシーン。謎の黒いコートの人物との初めての接触が描かれる。</textarea>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <h3>背景設定</h3>
+                            <div class="backgrounds-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 10px;">
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <img src="/api/placeholder/200/120" alt="背景">
+                                    <div style="margin-top: 5px;">
+                                        <p>管理局オフィス</p>
+                                        <button class="small-btn">編集</button>
+                                    </div>
+                                </div>
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <img src="/api/placeholder/200/120" alt="背景">
+                                    <div style="margin-top: 5px;">
+                                        <p>都市風景</p>
+                                        <button class="small-btn">編集</button>
+                                    </div>
+                                </div>
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <img src="/api/placeholder/200/120" alt="背景">
+                                    <div style="margin-top: 5px;">
+                                        <p>崩壊現場</p>
+                                        <button class="small-btn">編集</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button style="margin-top: 10px;">背景追加</button>
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <h3>BGM設定</h3>
+                            <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <h4>日常_穏やか</h4>
+                                    <div style="display: flex; align-items: center; margin-top: 5px;">
+                                        <button>▶</button>
+                                        <div style="height: 20px; background-color: var(--accent-color); width: 200px; margin: 0 10px;"></div>
+                                        <span>1:45</span>
+                                    </div>
+                                </div>
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <h4>緊張_調査</h4>
+                                    <div style="display: flex; align-items: center; margin-top: 5px;">
+                                        <button>▶</button>
+                                        <div style="height: 20px; background-color: var(--accent-color); width: 200px; margin: 0 10px;"></div>
+                                        <span>2:12</span>
+                                    </div>
+                                </div>
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <h4>戦闘_緊迫</h4>
+                                    <div style="display: flex; align-items: center; margin-top: 5px;">
+                                        <button>▶</button>
+                                        <div style="height: 20px; background-color: var(--accent-color); width: 200px; margin: 0 10px;"></div>
+                                        <span>1:58</span>
+                                    </div>
+                                </div>
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <h4>神秘_異次元</h4>
+                                    <div style="display: flex; align-items: center; margin-top: 5px;">
+                                        <button>▶</button>
+                                        <div style="height: 20px; background-color: var(--accent-color); width: 200px; margin: 0 10px;"></div>
+                                        <span>2:34</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button style="margin-top: 10px;">BGM追加</button>
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <h3>効果音設定</h3>
+                            <div style="margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <h4>ドア_開く</h4>
+                                    <button>▶</button>
+                                </div>
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <h4>爆発音</h4>
+                                    <button>▶</button>
+                                </div>
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <h4>チョーカー_警告</h4>
+                                    <button>▶</button>
+                                </div>
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <h4>能力_崩壊</h4>
+                                    <button>▶</button>
+                                </div>
+                                <div style="border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;">
+                                    <h4>回想_フラッシュバック</h4>
+                                    <button>▶</button>
+                                </div>
+                            </div>
+                            <button style="margin-top: 10px;">効果音追加</button>
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <h3>シーン変数</h3>
+                            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                                <thead>
+                                    <tr style="background-color: var(--secondary-color);">
+                                        <th style="padding: 8px; text-align: left; border: 1px solid var(--border-color);">変数名</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid var(--border-color);">初期値</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid var(--border-color);">説明</th>
+                                        <th style="padding: 8px; text-align: left; border: 1px solid var(--border-color);">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">遥との関係</td>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">50</td>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">風間遥との信頼関係の数値</td>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">
+                                            <button class="small-btn">編集</button>
+                                            <button class="small-btn">削除</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">黒コート遭遇</td>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">false</td>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">黒いコートの人物に遭遇したかのフラグ</td>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">
+                                            <button class="small-btn">編集</button>
+                                            <button class="small-btn">削除</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">能力使用回数</td>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">0</td>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">崩壊能力を使用した回数</td>
+                                        <td style="padding: 8px; border: 1px solid var(--border-color);">
+                                            <button class="small-btn">編集</button>
+                                            <button class="small-btn">削除</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <button style="margin-top: 10px;">変数追加</button>
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: right;">
+                            <button id="save-scene-settings">設定を保存</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ヘルプ -->
+                <div class="help-panel hidden" id="help-tab-content">
+                    <div class="help-section">
+                        <h3>破壊の境界線 ビジュアルノベルエディターについて</h3>
+                        <p>このエディターは、『破壊の境界線』ビジュアルノベルゲームの制作をサポートするために開発された専用ツールです。スクリプト作成、キャラクター設定、分岐シナリオの構築などの機能を統合しています。</p>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h3>スクリプトエディターの使い方</h3>
+                        <p>スクリプトエディターでは、ゲームの台詞や演出を記述できます。主な記法は以下の通りです：</p>
+                        <ul>
+                            <li><code>@キャラ [名前] 表示 [位置] [表情]</code> - キャラクターを表示します</li>
+                            <li><code>@キャラ [名前] 表情 [表情]</code> - キャラクターの表情を変更します</li>
+                            <li><code>@キャラ [名前] 非表示</code> - キャラクターを非表示にします</li>
+                            <li><code>@背景 [背景名]</code> - 背景を変更します</li>
+                            <li><code>@BGM [BGM名]</code> - BGMを変更します</li>
+                            <li><code>@SE [効果音名]</code> - 効果音を再生します</li>
+                            <li><code>@エフェクト [エフェクト名]</code> - 画面エフェクトを適用します</li>
+                            <li><code>@選択肢 [タイトル]</code> - 選択肢を作成します</li>
+                            <li><code>- [選択肢テキスト]</code> - 個別の選択肢を定義します</li>
+                            <li><code>@ジャンプ [ラベル]</code> - 指定したラベルに移動します</li>
+                            <li><code>#[ラベル]</code> - スクリプト内のラベルを定義します</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h3>分岐エディターの使い方</h3>
+                        <p>分岐エディターでは、物語の分岐構造を視覚的に作成・編集できます。</p>
+                        <ul>
+                            <li>「ノード追加」ボタンで新しいシーンノードを作成できます</li>
+                            <li>「接続追加」ボタンで選択した2つのノード間に接続を作成できます</li>
+                            <li>「自動整列」ボタンでノードを自動的に整理します</li>
+                            <li>ノードをドラッグして位置を調整できます</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h3>キャラクターエディターの使い方</h3>
+                        <p>キャラクターエディターでは、ゲームに登場するキャラクターの情報や表情を管理できます。</p>
+                        <ul>
+                            <li>キャラクターの基本情報（名前、年齢、職業など）を設定できます</li>
+                            <li>表情パターンを追加・編集できます</li>
+                            <li>ボイス設定を管理できます</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h3>シーン設定の使い方</h3>
+                        <p>シーン設定では、各シーンの背景、BGM、効果音、変数などを管理できます。</p>
+                        <ul>
+                            <li>背景画像を追加・編集できます</li>
+                            <li>BGMや効果音を設定できます</li>
+                            <li>シーン変数を定義して、分岐条件などに利用できます</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h3>Tips & Tricks</h3>
+                        <ul>
+                            <li>こまめに保存することをお勧めします</li>
+                            <li>複雑な分岐は、まず分岐エディターで設計してからスクリプトを書くと効率的です</li>
+                            <li>キャラクターの表情は多すぎると管理が大変になるので、必要最小限に抑えることをお勧めします</li>
+                            <li>変数名は覚えやすい名前にすると良いでしょう</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h3>ショートカットキー</h3>
+                        <ul>
+                            <li><code>Ctrl+S</code> - 保存</li>
+                            <li><code>Ctrl+Z</code> - 元に戻す</li>
+                            <li><code>Ctrl+Y</code> - やり直す</li>
+                            <li><code>F5</code> - プレビュー更新</li>
+                            <li><code>Alt+1</code> - スクリプトタブに切り替え</li>
+                            <li><code>Alt+2</code> - 分岐エディタータブに切り替え</li>
+                            <li><code>Alt+3</code> - キャラクターエディタータブに切り替え</li>
+                            <li><code>Alt+4</code> - シーン設定タブに切り替え</li>
+                            <li><code>F1</code> - ヘルプを表示</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div class="left-status">
+            プロジェクト: 破壊の境界線 | シーン: 第1章:現実の亀裂
+        </div>
+        <div class="right-status">
+            最終保存: 2025/03/02 14:23 | 文字数: 1,245
+        </div>
+    </div>
+
+    <!-- ダイアログのテンプレート（通常は非表示） -->
+    <div class="dialog hidden" id="new-project-dialog">
+        <div class="dialog-content">
+            <div class="dialog-header">
+                <h2>新規プロジェクト作成</h2>
+                <button class="dialog-close">&times;</button>
+            </div>
+            <div class="dialog-body">
+                <div style="margin-bottom: 15px;">
+                    <label for="project-name" style="display: block; margin-bottom: 5px;">プロジェクト名:</label>
+                    <input type="text" id="project-name" value="破壊の境界線" style="width: 100%; padding: 8px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="project-description" style="display: block; margin-bottom: 5px;">プロジェクト説明:</label>
+                    <textarea id="project-description" style="width: 100%; height: 100px; padding: 8px;">SFアクションサイコロジカルスリラーのビジュアルノベルゲーム。特殊能力を持つ主人公が、崩壊していく世界の真実に迫る物語。</textarea>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="project-author" style="display: block; margin-bottom: 5px;">制作者:</label>
+                    <input type="text" id="project-author" value="境界線スタジオ" style="width: 100%; padding: 8px;">
+                </div>
+                <div>
+                    <label for="project-template" style="display: block; margin-bottom: 5px;">テンプレート:</label>
+                    <select id="project-template" style="width: 100%; padding: 8px;">
+                        <option value="blank">空のプロジェクト</option>
+                        <option value="vn-basic" selected>基本的なビジュアルノベル</option>
+                        <option value="vn-branching">分岐の多いビジュアルノベル</option>
+                        <option value="vn-rpg">RPG要素付きビジュアルノベル</option>
+                    </select>
+                </div>
+            </div>
+            <div class="dialog-footer">
+                <button id="cancel-new-project">キャンセル</button>
+                <button id="create-new-project">作成</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // タブ切り替え機能
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // アクティブなタブを変更
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // タブコンテンツを表示/非表示
+                const tabName = tab.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content > div').forEach(content => {
+                    content.classList.add('hidden');
+                });
+                document.getElementById(tabName + '-tab-content').classList.remove('hidden');
+            });
+        });
+        
+        // 新規プロジェクトダイアログの表示
+        document.getElementById('new-project-btn').addEventListener('click', () => {
+            document.getElementById('new-project-dialog').classList.remove('hidden');
+        });
+        
+        // ダイアログを閉じる機能
+        document.querySelectorAll('.dialog-close, #cancel-new-project').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.dialog').forEach(dialog => {
+                    dialog.classList.add('hidden');
+                });
+            });
+        });
+        
+        // 新規プロジェクト作成処理
+        document.getElementById('create-new-project').addEventListener('click', () => {
+            const projectName = document.getElementById('project-name').value;
+            const projectDescription = document.getElementById('project-description').value;
+            const projectAuthor = document.getElementById('project-author').value;
+            const projectTemplate = document.getElementById('project-template').value;
+            
+            // ここでプロジェクト作成のロジックを実装
+            console.log('新規プロジェクト作成:', { projectName, projectDescription, projectAuthor, projectTemplate });
+            
+            // 作成後はダイアログを閉じる
+            document.getElementById('new-project-dialog').classList.add('hidden');
+            
+            // トースト通知を表示
+            showToast(`プロジェクト "${projectName}" を作成しました`);
+        });
+        
+        // トースト通知を表示する関数
+        function showToast(message, isError = false) {
+            // トーストコンテナがなければ作成
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            
+            // トースト要素を作成
+            const toast = document.createElement('div');
+            toast.className = isError ? 'toast error' : 'toast';
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            // 一定時間後に消える
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    container.removeChild(toast);
+                }, 300);
+            }, 3000);
+        }
+        
+        // キャラクターリストの選択機能
+        document.querySelectorAll('.character-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.character-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+                
+                // キャラクター情報の読み込み（実際のアプリではAPIからデータを取得する）
+                const characterName = item.textContent;
+                console.log('キャラクター選択:', characterName);
+                
+                // ここでキャラクター情報をフォームに表示する処理を実装
+            });
+        });
+        
+        // プロジェクトツリーの選択機能
+        document.querySelectorAll('.project-item, .chapter-item, .branch-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.project-item, .chapter-item, .branch-item').forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+            });
+        });
+        
+        // ノードのドラッグ機能
+        document.querySelectorAll('.node').forEach(node => {
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            node.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - node.offsetLeft;
+                offsetY = e.clientY - node.offsetTop;
+                
+                // ドラッグ中のスタイル
+                node.style.opacity = '0.8';
+                node.style.zIndex = '100';
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    node.style.left = (e.clientX - offsetX) + 'px';
+                    node.style.top = (e.clientY - offsetY) + 'px';
+                    
+                    // エッジの位置も更新する必要があるが、
+                    // 実際のアプリではより複雑なロジックが必要
+                }
+            });
+            
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    node.style.opacity = '1';
+                    node.style.zIndex = '1';
+                    
+                    // ノードの位置を保存
+                    console.log('ノード位置更新:', node.textContent, node.style.left, node.style.top);
+                }
+            });
+        });
+        
+        // スクリプトエディターの操作
+        document.getElementById('script-textarea').addEventListener('input', () => {
+            // リアルタイムプレビューの更新など
+            // 実際のアプリではパーサーを使用してスクリプトを解析
+            updateCharCount();
+        });
+        
+        // 文字数カウント機能
+        function updateCharCount() {
+            const text = document.getElementById('script-textarea').value;
+            const charCount = text.length;
+            document.querySelector('.right-status').textContent = `最終保存: 2025/03/02 14:23 | 文字数: ${charCount}`;
+        }
+        
+        // ツールバーボタンの機能
+        document.getElementById('insert-dialog').addEventListener('click', () => {
+            const textarea = document.getElementById('script-textarea');
+            const character = document.getElementById('character-select').value;
+            const expression = document.getElementById('expression-select').value;
+            
+            let insertText = '';
+            if (character) {
+                insertText = `@キャラ ${character} 表情 ${expression || '通常'}\n\n「」\n\n`;
+            } else {
+                insertText = `「」\n\n`;
+            }
+            
+            // カーソル位置に挿入
+            const startPos = textarea.selectionStart;
+            const endPos = textarea.selectionEnd;
+            textarea.value = textarea.value.substring(0, startPos) + insertText + textarea.value.substring(endPos);
+            
+            // カーソル位置を引用符の中に設定
+            const newCursorPos = startPos + insertText.indexOf('」');
+            textarea.focus();
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+            
+            updateCharCount();
+        });
+        
+        document.getElementById('insert-choice').addEventListener('click', () => {
+            const textarea = document.getElementById('script-textarea');
+            const insertText = `@選択肢 選択肢タイトル\n- 選択肢1\n  @ジャンプ 選択肢1_ラベル\n- 選択肢2\n  @ジャンプ 選択肢2_ラベル\n\n#選択肢1_ラベル\n// 選択肢1の内容\n\n#選択肢2_ラベル\n// 選択肢2の内容\n\n`;
+            
+            // カーソル位置に挿入
+            const startPos = textarea.selectionStart;
+            const endPos = textarea.selectionEnd;
+            textarea.value = textarea.value.substring(0, startPos) + insertText + textarea.value.substring(endPos);
+            
+            updateCharCount();
+        });
+        
+        document.getElementById('insert-effect').addEventListener('click', () => {
+            const textarea = document.getElementById('script-textarea');
+            const insertText = `@エフェクト エフェクト名\n`;
+            
+            // カーソル位置に挿入
+            const startPos = textarea.selectionStart;
+            const endPos = textarea.selectionEnd;
+            textarea.value = textarea.value.substring(0, startPos) + insertText + textarea.value.substring(endPos);
+            
+            updateCharCount();
+        });
+        
+        // キャラクター選択時の表情選択更新
+        document.getElementById('character-select').addEventListener('change', (e) => {
+            const character = e.target.value;
+            const expressionSelect = document.getElementById('expression-select');
+            
+            // 選択されたキャラクターに基づいて表情オプションを更新
+            // 実際のアプリではデータベースからキャラクターの表情リストを取得
+            expressionSelect.innerHTML = '';
+            
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = '表情選択';
+            expressionSelect.appendChild(defaultOption);
+            
+            if (character === 'rinne') {
+                const expressions = ['通常', '笑顔', '悲しみ', '怒り', '驚き', '冷たい', '決意'];
+                expressions.forEach(exp => {
+                    const option = document.createElement('option');
+                    option.value = exp;
+                    option.textContent = exp;
+                    expressionSelect.appendChild(option);
+                });
+            } else if (character) {
+                const expressions = ['通常', '笑顔', '悲しみ', '怒り', '驚き'];
+                expressions.forEach(exp => {
+                    const option = document.createElement('option');
+                    option.value = exp;
+                    option.textContent = exp;
+                    expressionSelect.appendChild(option);
+                });
+            }
+        });
+        
+        // プロジェクト保存機能
+        document.getElementById('save-project-btn').addEventListener('click', () => {
+            // 実際のアプリではプロジェクトデータをJSONなどの形式で保存
+            console.log('プロジェクト保存');
+            showToast('プロジェクトを保存しました');
+            
+            // 最終保存時間を更新
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            document.querySelector('.right-status').textContent = `最終保存: ${timeStr} | 文字数: ${document.getElementById('script-textarea').value.length}`;
+        });
+        
+        // エクスポート機能
+        document.getElementById('export-btn').addEventListener('click', () => {
+            // 実際のアプリではプロジェクトを特定の形式でエクスポート
+            console.log('プロジェクトエクスポート');
+            
+            // エクスポートオプションを表示するダイアログなど
+            showToast('プロジェクトをエクスポートしました');
+        });
+        
+        // 設定機能
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            // 設定ダイアログを表示
+            console.log('設定ダイアログを表示');
+            showToast('設定機能は開発中です');
+        });
+        
+        // ヘルプ機能
+        document.getElementById('help-btn').addEventListener('click', () => {
+            // ヘルプタブに切り替え
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.tab[data-tab="help"]').classList.add('active');
+            
+            document.querySelectorAll('.tab-content > div').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById('help-tab-content').classList.remove('hidden');
+        });
+        
+        // キャラクター情報保存
+        document.getElementById('save-character-btn').addEventListener('click', () => {
+            const characterData = {
+                name: document.getElementById('char-name').value,
+                nameRuby: document.getElementById('char-name-ruby').value,
+                codename: document.getElementById('char-codename').value,
+                age: document.getElementById('char-age').value,
+                occupation: document.getElementById('char-occupation').value,
+                ability: document.getElementById('char-ability').value,
+                abilityDesc: document.getElementById('char-ability-desc').value,
+                personality: document.getElementById('char-personality').value,
+                background: document.getElementById('char-background').value,
+                themeColor: document.getElementById('char-color').value,
+                voice: document.getElementById('char-voice').value
+            };
+            
+            console.log('キャラクター情報保存:', characterData);
+            showToast(`キャラクター「${characterData.name}」の情報を保存しました`);
+        });
+        
+        // シーン設定保存
+        document.getElementById('save-scene-settings').addEventListener('click', () => {
+            const sceneData = {
+                id: document.getElementById('scene-id').value,
+                title: document.getElementById('scene-title').value,
+                description: document.getElementById('scene-description').value
+                // 実際のアプリではより多くの設定を収集
+            };
+            
+            console.log('シーン設定保存:', sceneData);
+            showToast(`シーン「${sceneData.title}」の設定を保存しました`);
+        });
+        
+        // 新規キャラクター追加
+        document.getElementById('add-character-btn').addEventListener('click', () => {
+            // 実際のアプリでは新規キャラクター作成フォームを表示
+            console.log('新規キャラクター追加');
+            showToast('新規キャラクター追加機能は開発中です');
+        });
+        
+        // 表情追加
+        document.getElementById('add-expression-btn').addEventListener('click', () => {
+            // 実際のアプリでは表情追加フォームを表示
+            console.log('表情追加');
+            showToast('表情追加機能は開発中です');
+        });
+        
+        // ノード追加
+        document.getElementById('add-node').addEventListener('click', () => {
+            // 実際のアプリでは新規ノード作成フォームを表示
+            console.log('ノード追加');
+            showToast('ノード追加機能は開発中です');
+        });
+        
+        // 分岐エッジ追加
+        document.getElementById('add-edge').addEventListener('click', () => {
+            // 実際のアプリでは2つのノードを選択して接続
+            console.log('エッジ追加');
+            showToast('エッジ追加機能は開発中です');
+        });
+        
+        // 選択要素削除
+        document.getElementById('delete-selected').addEventListener('click', () => {
+            // 実際のアプリでは選択されているノードやエッジを削除
+            console.log('選択要素削除');
+            showToast('削除機能は開発中です');
+        });
+        
+        // 自動整列
+        document.getElementById('auto-arrange').addEventListener('click', () => {
+            // 実際のアプリでは分岐図のノードを自動整列
+            console.log('自動整列');
+            showToast('自動整列機能は開発中です');
+        });
+        
+        // ショートカットキー
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+S: 保存
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                document.getElementById('save-project-btn').click();
+            }
+            
+            // Alt+1〜5: タブ切り替え
+            if (e.altKey && e.key >= '1' && e.key <= '5') {
+                e.preventDefault();
+                const tabIndex = parseInt(e.key) - 1;
+                const tabs = document.querySelectorAll('.tab');
+                if (tabIndex < tabs.length) {
+                    tabs[tabIndex].click();
+                }
+            }
+            
+            // F1: ヘルプ
+            if (e.key === 'F1') {
+                e.preventDefault();
+                document.getElementById('help-btn').click();
+            }
+        });
+        
+        // 初期化処理
+        function init() {
+            updateCharCount();
+            
+            // 初期表示するタブをアクティブに
+            document.querySelector('.tab[data-tab="script"]').click();
+            
+            // ウェルカムメッセージ
+            showToast('ビジュアルノベルエディターへようこそ！');
+        }
+        
+        // 初期化を実行
+        init();
+        
+        // デバッグ用関数
+        function debugLog(message) {
+            if (window.debugMode) {
+                console.log(`[DEBUG] ${message}`);
+            }
+        }
+        
+        // プロジェクトデータ構造例
+        const projectDataStructure = {
+            metadata: {
+                title: "破壊の境界線",
+                author: "境界線スタジオ",
+                createdAt: "2025-02-28T12:00:00Z",
+                lastModified: "2025-03-02T14:23:00Z",
+                version: "0.1.0"
+            },
+            settings: {
+                resolution: {
+                    width: 1280,
+                    height: 720
+                },
+                textSpeed: "medium",
+                autoModeDelay: 2000,
+                defaultTextColor: "#FFFFFF",
+                defaultFontSize: 22
+            },
+            characters: [
+                {
+                    id: "rinne",
+                    name: "霧島 鈴音",
+                    nameRuby: "きりしま りんね",
+                    codename: "オブリビオン",
+                    age: 23,
+                    occupation: "境界管理局・特殊能力捜査官",
+                    ability: "崩壊",
+                    abilityDesc: "接触したものの分子構造を不安定化させ、崩壊させることができる。",
+                    personality: "クールで寡黙だが内面は情熱的。任務には真摯に向き合うが、自分の能力に対する恐れと葛藤を抱えている。",
+                    background: "幼少期に能力が暴走し、両親を失う事故を引き起こした。その後、境界管理局に保護され、能力の制御方法と使い方を学んだ。",
+                    themeColor: "#4CAF50",
+                    expressions: [
+                        { id: "normal", name: "通常", file: "rinne_normal.png" },
+                        { id: "smile", name: "笑顔", file: "rinne_smile.png" },
+                        { id: "sad", name: "悲しみ", file: "rinne_sad.png" },
+                        { id: "angry", name: "怒り", file: "rinne_angry.png" },
+                        { id: "surprised", name: "驚き", file: "rinne_surprised.png" }
+                    ],
+                    voice: {
+                        actorName: "未定",
+                        sampleFile: null
+                    }
+                },
+                {
+                    id: "haruka",
+                    name: "風間 遥",
+                    nameRuby: "かざま はるか",
+                    codename: null,
+                    age: 25,
+                    occupation: "境界管理局・分析官",
+                    ability: "視認",
+                    abilityDesc: "過去の残響を視覚化する能力。特に強いエネルギーや感情が残留している場所で有効。",
+                    personality: "明るく社交的、論理的思考の持ち主。鈴音とは対照的に感情表現が豊か。",
+                    background: "境界管理局の創設期から所属。家族は代々警察関係者で、幼い頃から正義感が強かった。",
+                    themeColor: "#2196F3",
+                    expressions: [
+                        { id: "normal", name: "通常", file: "haruka_normal.png" },
+                        { id: "smile", name: "笑顔", file: "haruka_smile.png" },
+                        { id: "sad", name: "悲しみ", file: "haruka_sad.png" },
+                        { id: "angry", name: "怒り", file: "haruka_angry.png" },
+                        { id: "surprised", name: "驚き", file: "haruka_surprised.png" }
+                    ],
+                    voice: {
+                        actorName: "未定",
+                        sampleFile: null
+                    }
+                }
+            ],
+            chapters: [
+                {
+                    id: "prologue",
+                    title: "序章: 運命の日",
+                    scenes: ["prologue_start", "prologue_incident", "prologue_aftermath"]
+                },
+                {
+                    id: "chapter1",
+                    title: "第1章: 現実の亀裂",
+                    scenes: ["chapter1_office", "chapter1_incident", "chapter1_encounter"]
+                }
+            ],
+            scenes: {
+                "chapter1_office": {
+                    id: "chapter1_office",
+                    title: "管理局オフィス",
+                    background: "office",
+                    bgm: "daily_calm",
+                    script: "// スクリプト内容はここに...",
+                    variables: {
+                        "harukaRelationship": 50,
+                        "blackCoatEncounter": false,
+                        "abilityUseCount": 0
+                    },
+                    branches: [
+                        {
+                            condition: "choice1 == 'A'",
+                            destination: "chapter1_inquiry"
+                        },
+                        {
+                            condition: "choice1 == 'B'",
+                            destination: "chapter1_schedule"
+                        }
+                    ]
+                }
+            },
+            resources: {
+                backgrounds: [
+                    { id: "office", file: "bg_office.jpg", description: "管理局オフィス" },
+                    { id: "city", file: "bg_city.jpg", description: "都市風景" },
+                    { id: "ruins", file: "bg_ruins.jpg", description: "崩壊現場" }
+                ],
+                bgm: [
+                    { id: "daily_calm", file: "bgm_daily_calm.mp3", description: "日常_穏やか" },
+                    { id: "tension", file: "bgm_tension.mp3", description: "緊張_調査" },
+                    { id: "battle", file: "bgm_battle.mp3", description: "戦闘_緊迫" }
+                ],
+                soundEffects: [
+                    { id: "door_open", file: "se_door_open.mp3", description: "ドア_開く" },
+                    { id: "explosion", file: "se_explosion.mp3", description: "爆発音" },
+                    { id: "choker_warning", file: "se_choker_warning.mp3", description: "チョーカー_警告" }
+                ]
+            }
+        };
+        
+        // スクリプト解析用関数
+        function parseScript(scriptText) {
+            const lines = scriptText.split('\n');
+            const parsedScript = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.startsWith('//') || line === '') {
+                    // コメントや空行はスキップ
+                    continue;
+                } else if (line.startsWith('@')) {
+                    // コマンド行
+                    const cmdParts = line.substring(1).split(' ');
+                    const cmd = cmdParts[0];
+                    
+                    switch (cmd) {
+                        case 'キャラ':
+                            parsedScript.push({
+                                type: 'character',
+                                name: cmdParts[1],
+                                action: cmdParts[2],
+                                position: cmdParts[3],
+                                expression: cmdParts[4]
+                            });
+                            break;
+                        case '背景':
+                            parsedScript.push({
+                                type: 'background',
+                                name: cmdParts[1]
+                            });
+                            break;
+                        case 'BGM':
+                            parsedScript.push({
+                                type: 'bgm',
+                                name: cmdParts[1]
+                            });
+                            break;
+                        case 'SE':
+                        case '効果音':
+                            parsedScript.push({
+                                type: 'soundEffect',
+                                name: cmdParts[1]
+                            });
+                            break;
+                        case 'エフェクト':
+                            parsedScript.push({
+                                type: 'effect',
+                                name: cmdParts[1]
+                            });
+                            break;
+                        case '選択肢':
+                            const choiceOptions = [];
+                            let j = i + 1;
+                            while (j < lines.length && lines[j].trim().startsWith('-')) {
+                                const choiceText = lines[j].trim().substring(1).trim();
+                                const jumpLine = j + 1 < lines.length && lines[j + 1].trim().startsWith('@ジャンプ') ? 
+                                                lines[j + 1].trim().substring('@ジャンプ'.length).trim() : null;
+                                
+                                choiceOptions.push({
+                                    text: choiceText,
+                                    destination: jumpLine
+                                });
+                                
+                                j += jumpLine ? 2 : 1;
+                            }
+                            
+                            parsedScript.push({
+                                type: 'choice',
+                                title: cmdParts.slice(1).join(' '),
+                                options: choiceOptions
+                            });
+                            
+                            i = j - 1; // jの位置まで進んだのでiを更新
+                            break;
+                        case 'ジャンプ':
+                            parsedScript.push({
+                                type: 'jump',
+                                destination: cmdParts[1]
+                            });
+                            break;
+                        default:
+                            parsedScript.push({
+                                type: 'command',
+                                name: cmd,
+                                params: cmdParts.slice(1)
+                            });
+                    }
+                } else if (line.startsWith('#')) {
+                    // ラベル
+                    parsedScript.push({
+                        type: 'label',
+                        name: line.substring(1)
+                    });
+                } else if (line.startsWith('「') && line.endsWith('」')) {
+                    // 台詞
+                    parsedScript.push({
+                        type: 'dialog',
+                        text: line
+                    });
+                } else {
+                    // ナレーションなど
+                    parsedScript.push({
+                        type: 'narration',
+                        text: line
+                    });
+                }
+            }
+            
+            return parsedScript;
+        }
+        
+        // スクリプトのプレビュー更新関数（実装例）
+        function updateScriptPreview() {
+            const scriptText = document.getElementById('script-textarea').value;
+            const parsedScript = parseScript(scriptText);
+            
+            // プレビュー更新のための実装を追加
+            debugLog('スクリプトプレビュー更新');
+            debugLog(JSON.stringify(parsedScript, null, 2));
+            
+            // 例: 最初の台詞を探してプレビューに表示
+            const firstDialog = parsedScript.find(item => item.type === 'dialog');
+            if (firstDialog) {
+                document.querySelector('.dialog-text').textContent = firstDialog.text;
+            }
+            
+            // 例: キャラクター表示コマンドを探してキャラクター表示を更新
+            const characterCmd = parsedScript.find(item => item.type === 'character');
+            if (characterCmd) {
+                document.querySelector('.speaker-name').textContent = characterCmd.name;
+                // 実際のアプリではキャラクター画像も更新
+            }
+        }
+        
+        // 今後の拡張機能のためのプレースホルダー
+        function exportToGameEngine() {
+            // プロジェクトデータをゲームエンジン用の形式に変換
+            debugLog('ゲームエンジン用にエクスポート');
+            showToast('ゲームエンジン用のエクスポート機能は開発中です');
+        }
+        
+        function importFromFile() {
+            // 外部ファイルからプロジェクトをインポート
+            debugLog('外部ファイルからインポート');
+            showToast('インポート機能は開発中です');
+        }
+        
+        function generateDocumentation() {
+            // プロジェクトのドキュメントを自動生成
+            debugLog('ドキュメント生成');
+            showToast('ドキュメント生成機能は開発中です');
+        }
+        
+        function checkConsistency() {
+            // プロジェクト内の一貫性チェック
+            // 例: 未定義のラベルへのジャンプがないかなど
+            debugLog('一貫性チェック');
+            showToast('一貫性チェック機能は開発中です');
+        }
+        
+        // アナリティクス機能
+        function projectStatistics() {
+            const scriptText = document.getElementById('script-textarea').value;
+            const stats = {
+                characterCount: scriptText.length,
+                lineCount: scriptText.split('\n').length,
+                dialogCount: (scriptText.match(/「[^」]*」/g) || []).length,
+                choiceCount: (scriptText.match(/@選択肢/g) || []).length,
+                commandCount: (scriptText.match(/@[^\s]+/g) || []).length
+            };
+            
+            debugLog('プロジェクト統計:');
+            debugLog(JSON.stringify(stats, null, 2));
+            
+            return stats;
+        }
+    </script>
+</body>
+</html>
